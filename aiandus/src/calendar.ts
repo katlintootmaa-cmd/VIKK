@@ -1,9 +1,10 @@
 import phases from './data/moon-phases.json' with { type: 'json' };
 import { EXTRA_CROPS } from './data/extraCrops.ts';
+import type { PlantProfile } from './garden.ts';
 
 export const TIME_ZONE = 'Europe/Tallinn';
 export type Day = string;
-type LunarPeriod = 'waxing' | 'waning';
+export type LunarPeriod = 'waxing' | 'waning';
 
 export const METHOD = {
   outdoor: 'Avamaale külv',
@@ -24,9 +25,8 @@ export const USNO = 'https://aa.usno.navy.mil/data/MoonPhases';
 export const TRADITION = 'https://www.almanac.com/planting-by-the-moon';
 
 export type Crop = {
-  id: string; name: string; icon: string;
-  category?: 'field'; careId?: string;
-  start: string; end: string; advice: string; source: string;
+  id: string; name: string; icon: string; careId?: string;
+  start: string; end: string; advice: string; source?: string; profile?: PlantProfile;
 } & (
   | { method: Exclude<Method, PlantingMethod>; lunar: LunarPeriod }
   | { method: PlantingMethod; lunar?: LunarPeriod }
@@ -77,6 +77,14 @@ export function validDay(day: Day): boolean {
   return Number.isFinite(date.getTime()) && date.toISOString().startsWith(day);
 }
 
+export function parseDayInput(value: string): Day | undefined {
+  const match = /^(\d{2})-(\d{2})-(\d{2}|\d{4})$/.exec(value.trim());
+  if (!match) return undefined;
+  const [, day, month, year] = match;
+  const date = `${year.length === 2 ? `20${year}` : year}-${month}-${day}`;
+  return validDay(date) ? date : undefined;
+}
+
 export function addDays(day: Day, count: number): Day {
   const date = dateOf(day);
   date.setUTCDate(date.getUTCDate() + count);
@@ -97,8 +105,8 @@ export function monthGrid(day: Day): Day[] {
   return Array.from({ length: cells }, (_, index) => addDays(start, index - leading));
 }
 
-export function formatDay(day: Day, options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }): string {
-  return new Intl.DateTimeFormat('et-EE', { ...options, timeZone: 'UTC' }).format(dateOf(day));
+export function formatDay(day: Day): string {
+  return `${day.slice(8)}-${day.slice(5, 7)}-${day.slice(0, 4)}`;
 }
 
 const lunarEvents = phases.map((event) => ({ ...event, day: localDay(new Date(event.instant)) }));
@@ -188,4 +196,35 @@ export function calendarSeason(crop: Crop, year: string, today: Day) {
     suggestion: status === 'ended' ? { status: 'season-ended' as const } : nextSuggestedDay(crop, start),
     followingWindow: sowingWindow(crop, String(Number(year) + 1)),
   };
+}
+
+export type DayRange = { start: Day; end: Day };
+
+// Finds the next consecutive day ranges, starting from `from`, where the crop window is open
+// and the chosen lunar period applies at Tallinn noon. Searches up to three years ahead.
+export function upcomingLunarRanges(crop: Crop, period: LunarPeriod, from: Day, count = 3) {
+  const ranges: DayRange[] = [];
+  let current: DayRange | undefined;
+  let missingData = false;
+  const limit = addDays(from, 3 * 366);
+  for (let day = from; day <= limit; day = addDays(day, 1)) {
+    if (!inSeason(crop, day)) {
+      current = undefined;
+      continue;
+    }
+    const dayPeriod = lunarPeriod(day);
+    if (dayPeriod === undefined) missingData = true;
+    if (dayPeriod !== period) {
+      current = undefined;
+      continue;
+    }
+    if (current) {
+      current.end = day;
+    } else {
+      if (ranges.length === count) break;
+      current = { start: day, end: day };
+      ranges.push(current);
+    }
+  }
+  return { ranges, missingData: ranges.length < count && missingData };
 }

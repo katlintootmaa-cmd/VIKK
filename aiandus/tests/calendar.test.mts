@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CROPS, addDays, calendarSeason, inSeason, isPlanting, localDay, lunarPeriod, monthGrid, moonEvent, nextSuggestedDay, nextWindow, recommended, sowingWindowCoverage, tallinnTime, validDay, withSowingPeriod } from '../src/calendar.ts';
+import { CROPS, addDays, calendarSeason, formatDay, inSeason, isPlanting, localDay, lunarPeriod, monthGrid, moonEvent, nextSuggestedDay, nextWindow, parseDayInput, recommended, sowingWindowCoverage, tallinnTime, upcomingLunarRanges, validDay, withSowingPeriod } from '../src/calendar.ts';
 
 test('calendar season uses today and lists only upcoming recommended days in order', () => {
   const tomato = CROPS.find(({ id }) => id === 'tomat')!;
@@ -39,6 +39,16 @@ test('calendar handles leap years, Monday weeks, and year boundaries', () => {
   assert.equal(monthGrid('2027-05-12').at(-1), '2027-06-06');
 });
 
+test('date fields accept both day-first formats and display stored dates with four-digit years', () => {
+  assert.equal(formatDay('2028-02-09'), '09-02-2028');
+  assert.equal(parseDayInput('09-02-2028'), '2028-02-09');
+  assert.equal(parseDayInput('09-02-28'), '2028-02-09');
+  assert.equal(parseDayInput('29-02-00'), '2000-02-29');
+  assert.equal(parseDayInput('31-12-1999'), '1999-12-31');
+  assert.equal(parseDayInput('29-02-27'), undefined);
+  assert.equal(parseDayInput('31-04-2028'), undefined);
+  assert.equal(parseDayInput('2028-02-09'), undefined);
+});
 test('moon phase display and lunar sowing classification use the published instant', () => {
   assert.equal(moonEvent('2027-01-07')?.instant, '2027-01-07T20:24:00Z');
   assert.equal(lunarPeriod('2027-01-07'), 'waning');
@@ -77,18 +87,17 @@ test('next suggested day distinguishes a match, no match, missing data, and the 
   assert.deepEqual(nextSuggestedDay(tomato, '2027-04-01'), { status: 'season-ended' });
 });
 
-test('field crops keep their growing window outside lunar data coverage', () => {
-  const oats = CROPS.find(({ id }) => id === 'kaer')!;
-  const season = calendarSeason(oats, '2032', '2032-04-20');
-  assert.equal(oats.category, 'field');
+test('crops keep their growing window outside lunar data coverage', () => {
+  const spinach = CROPS.find(({ id }) => id === 'spinat')!;
+  const season = calendarSeason(spinach, '2032', '2032-03-20');
   assert.equal(season.status, 'upcoming');
   assert.deepEqual(season.suggestion, { status: 'missing-data' });
   assert.deepEqual(season.days, []);
-  assert.equal(inSeason(oats, season.window.start), true);
-  assert.equal(recommended(oats, season.window.start), false);
+  assert.equal(inSeason(spinach, season.window.start), true);
+  assert.equal(recommended(spinach, season.window.start), false);
 });
 
-test('every sowing window uses its selected lunar period, including field and greenhouse work', () => {
+test('every sowing window uses its selected lunar period, including greenhouse work', () => {
   for (const crop of CROPS.filter(({ method }) => !isPlanting(method))) {
     const season = calendarSeason(crop, '2027', '2027-01-01');
     assert.ok(crop.lunar, crop.id);
@@ -100,13 +109,13 @@ test('every sowing window uses its selected lunar period, including field and gr
 });
 
 test('sowing preference changes eligible days while preserving the original window and planting', () => {
-  const oats = CROPS.find(({ id }) => id === 'kaer')!;
-  const changed = withSowingPeriod(oats, 'waning');
-  assert.equal(oats.lunar, 'waxing');
+  const dill = CROPS.find(({ id }) => id === 'till')!;
+  const changed = withSowingPeriod(dill, 'waning');
+  assert.equal(dill.lunar, 'waxing');
   const season = calendarSeason(changed, '2027', '2027-04-21');
-  assert.equal(season.window.start, '2027-04-21');
-  assert.equal(season.window.end, '2027-05-10');
-  assert.equal(recommended(oats, '2027-04-21'), false);
+  assert.equal(season.window.start, '2027-04-01');
+  assert.equal(season.window.end, '2027-04-30');
+  assert.equal(recommended(dill, '2027-04-21'), false);
   assert.equal(recommended(changed, '2027-04-21'), true);
   const planting = CROPS.find(({ id }) => id === 'tomat-kasvuhoone')!;
   assert.equal(withSowingPeriod(planting, 'waning'), planting);
@@ -157,4 +166,30 @@ test('a known match after a date with missing data remains available with a cove
   assert.deepEqual(nextSuggestedDay(window, '2025-01-14'), {
     status: 'found', day: '2025-01-14', earlierDataMissing: false,
   });
+});
+
+test('chosen lunar period lists the next three ranges inside the crop window', () => {
+  const tomato = CROPS.find(({ id }) => id === 'tomat')!;
+  const waxing = upcomingLunarRanges(tomato, 'waxing', '2027-01-01');
+  assert.equal(waxing.ranges.length, 3);
+  assert.deepEqual(waxing.ranges[0], { start: '2027-03-08', end: '2027-03-22' });
+  assert.equal(waxing.missingData, false);
+  for (const [index, { start, end }] of waxing.ranges.entries()) {
+    for (let day = start; day <= end; day = addDays(day, 1)) {
+      assert.ok(inSeason(tomato, day) && lunarPeriod(day) === 'waxing', day);
+    }
+    assert.ok(!inSeason(tomato, addDays(end, 1)) || lunarPeriod(addDays(end, 1)) !== 'waxing', end);
+    if (index > 0) assert.ok(start > addDays(waxing.ranges[index - 1].end, 1));
+  }
+  assert.ok(waxing.ranges[1].start.startsWith('2028-03'));
+  const waning = upcomingLunarRanges(tomato, 'waning', '2027-03-01');
+  assert.deepEqual(waning.ranges.slice(0, 2), [{ start: '2027-03-01', end: '2027-03-07' }, { start: '2027-03-23', end: '2027-03-31' }]);
+  assert.deepEqual(upcomingLunarRanges(tomato, 'waxing', '2027-03-10').ranges[0], { start: '2027-03-10', end: '2027-03-22' });
+});
+
+test('chosen lunar period reports when moon phase data runs out', () => {
+  const tomato = CROPS.find(({ id }) => id === 'tomat')!;
+  const result = upcomingLunarRanges(tomato, 'waxing', '2031-06-01');
+  assert.deepEqual(result.ranges, []);
+  assert.equal(result.missingData, true);
 });

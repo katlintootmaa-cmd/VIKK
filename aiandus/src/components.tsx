@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Linking, Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
-import { CROPS, METHOD, cropChoice, formatDay, isPlanting, nextWindow, validDay, type Crop, type Day } from './calendar';
+import { METHOD, cropChoice, formatDay, isPlanting, nextWindow, parseDayInput, type Crop, type Day } from './calendar';
 import type { Entry } from './journal';
 import { remindersAvailable } from './reminders';
 import { color, s } from './theme';
@@ -50,6 +50,7 @@ export function weatherIcon(code: number | null | undefined): Icon {
 }
 
 export const degrees = (value: number | null | undefined) => value == null ? '–' : `${Math.round(value)}°`;
+const soilMoisture = new Intl.NumberFormat('et-EE', { style: 'percent', maximumFractionDigits: 1 });
 
 export function WeatherDay({ weather }: { weather: ForecastDay }) {
   return <View style={s.stack}>
@@ -58,11 +59,13 @@ export function WeatherDay({ weather }: { weather: ForecastDay }) {
       <Text style={[s.strong, s.grow]}>{weatherLabel(weather.code)} · {degrees(weather.low)} / {degrees(weather.high)}</Text>
     </View>
     <Text style={s.small}>Sademed {weather.rain ?? '–'} mm · tuul kuni {weather.wind ?? '–'} km/h</Text>
+    <Text style={s.small}>Mulla temperatuur 6 cm sügavusel · {degrees(weather.soilTemperature)}</Text>
+    <Text style={s.small}>Mulla mahuline niiskus 3–9 cm sügavusel · {weather.soilMoisture == null ? '–' : soilMoisture.format(weather.soilMoisture)}</Text>
     {weather.frost && <View style={s.wrap}><Text style={[s.badge, s.warning]}>Võimalik öökülm</Text></View>}
   </View>;
 }
 
-function Sheet({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
+export function Sheet({ title, close, children }: { title: string; close: () => void; children: ReactNode }) {
   return <Modal animationType="fade" transparent onRequestClose={close}>
     <View style={s.overlay}>
       <View style={s.modal} accessibilityViewIsModal>
@@ -117,29 +120,35 @@ export function PlacePicker({ place, select, close }: { place: Place; select: (p
 }
 
 export type EditorRequest = {
-  kind: Entry['kind']; cropId: string; day: Day; entry?: Entry; completing?: boolean;
+  kind: Entry['kind']; cropId: string; day: Day; end?: Day; entry?: Entry; completing?: boolean; fromRecommendation?: boolean;
 };
 
-export function EntryEditor({ request, today, close, save }: {
-  request: EditorRequest; today: Day; close: () => void; save: (entry: Omit<Entry, 'id'>, id?: string) => Promise<void>;
+export function EntryEditor({ request, crops, today, close, save }: {
+  request: EditorRequest; crops: Crop[]; today: Day; close: () => void; save: (entry: Omit<Entry, 'id'>, id?: string) => Promise<void>;
 }) {
   const existing = request.entry;
-  const [crop, setCrop] = useState<Crop>(CROPS.find(({ id }) => id === request.cropId) ?? CROPS[0]);
-  const [day, setDay] = useState(request.day);
-  const [end, setEnd] = useState(request.kind === 'planned' ? existing?.end ?? '' : '');
+  const [kind, setKind] = useState(request.kind);
+  const [crop, setCrop] = useState<Crop>(crops.find(({ id }) => id === request.cropId) ?? crops[0]);
+  const [day, setDay] = useState(formatDay(request.day));
+  const initialEnd = existing?.end ?? request.end;
+  const [end, setEnd] = useState(request.kind === 'planned' && initialEnd ? formatDay(initialEnd) : '');
   const [variety, setVariety] = useState(existing?.variety ?? '');
   const [note, setNote] = useState(existing?.note ?? '');
   const [reminder, setReminder] = useState(request.kind === 'planned' && !!existing?.reminder);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
-  const isPlan = request.kind === 'planned';
-  const window = nextWindow(crop, validDay(day) && day > today ? day : today);
+  const isPlan = kind === 'planned';
+  const actualDay = parseDayInput(day);
+  const window = nextWindow(crop, actualDay && actualDay > today ? actualDay : today);
 
   async function submit() {
-    const actualDay = day.trim();
-    const lastDay = end.trim();
-    if (!validDay(actualDay) || (lastDay && (!validDay(lastDay) || lastDay < actualDay))) {
-      setError('Sisesta kehtivad kuupäevad kujul AAAA-KK-PP. Lõpupäev peab olema alguspäeval või hiljem.');
+    const lastDay = isPlan ? parseDayInput(end) : undefined;
+    if (!actualDay || (isPlan && end.trim() && !lastDay)) {
+      setError('Sisesta kehtiv kuupäev kujul PP-KK-AAAA või PP-KK-AA.');
+      return;
+    }
+    if (lastDay && lastDay < actualDay) {
+      setError('Lõpupäev peab olema alguspäeval või hiljem.');
       return;
     }
     if (!isPlan && actualDay > today) {
@@ -150,7 +159,7 @@ export function EntryEditor({ request, today, close, save }: {
     setSaving(true);
     try {
       await save({
-        kind: request.kind, cropId: crop.id, day: actualDay, end: isPlan ? lastDay || undefined : undefined,
+        kind, cropId: crop.id, day: actualDay, end: lastDay,
         variety: variety.trim() || undefined, note: note.trim(), reminder: isPlan && reminder,
         plannedDay: request.completing ? existing?.day : existing?.plannedDay,
       }, existing?.id);
@@ -163,7 +172,9 @@ export function EntryEditor({ request, today, close, save }: {
   const planting = isPlanting(crop.method);
   const dayLabel = isPlan ? 'Kuupäev või perioodi algus' : 'Tegelik kuupäev';
   return <Sheet title={isPlan ? 'Planeeri töö' : planting ? 'Märgi istutatuks' : 'Märgi külvatuks'} close={close}>
-    <Choice value={crop.id} options={CROPS.map(cropChoice)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
+    {request.fromRecommendation && request.day <= today && <Choice value={kind}
+      options={[['planned', 'Plaan'], ['done', 'Tehtud töö']]} onChange={(value) => { setKind(value); setError(''); }} />}
+    <Choice value={crop.id} options={crops.map(cropChoice)} onChange={(id) => setCrop(crops.find((item) => item.id === id) ?? crop)} />
     <Text style={s.small}>{METHOD[crop.method]}</Text>
     <View style={s.stack}>
       <Text style={s.strong}>Sort (valikuline)</Text>
@@ -171,16 +182,16 @@ export function EntryEditor({ request, today, close, save }: {
         placeholder="Sordi nimi" placeholderTextColor={color.muted} maxLength={100} />
     </View>
     {isPlan && <Button icon="calendar-outline" title={`Vali ${planting ? 'istutusperiood' : 'külviperiood'} · ${formatDay(window.start)} – ${formatDay(window.end)}`}
-      onPress={() => { setDay(window.start); setEnd(window.end); }} />}
+      onPress={() => { setDay(formatDay(window.start)); setEnd(formatDay(window.end)); }} />}
     <View style={s.stack}>
       <Text style={s.strong}>{dayLabel}</Text>
       <TextInput accessibilityLabel={dayLabel} style={s.field} value={day}
-        onChangeText={setDay} placeholder="AAAA-KK-PP" placeholderTextColor={color.muted} autoCapitalize="none" maxLength={10} />
+        onChangeText={setDay} placeholder="PP-KK-AAAA või PP-KK-AA" placeholderTextColor={color.muted} autoCapitalize="none" maxLength={10} />
     </View>
     {isPlan && <View style={s.stack}>
       <Text style={s.strong}>Perioodi lõpp (valikuline)</Text>
       <TextInput accessibilityLabel="Perioodi lõpp" style={s.field} value={end} onChangeText={setEnd}
-        placeholder="AAAA-KK-PP" placeholderTextColor={color.muted} autoCapitalize="none" maxLength={10} />
+        placeholder="PP-KK-AAAA või PP-KK-AA" placeholderTextColor={color.muted} autoCapitalize="none" maxLength={10} />
     </View>}
     <View style={s.stack}>
       <Text style={s.strong}>Täpsustused (valikuline)</Text>

@@ -20,7 +20,8 @@ export function useWeather(place: Place | undefined) {
 
     async function refresh(force = false) {
       if (!place || !active || controller) return;
-      if (!force && cached && Date.now() - cached.loadedAt < hour && cached.days.some(({ day }) => day === localDay())) return;
+      if (!force && cached && Date.now() - cached.loadedAt < hour &&
+        cached.days.some(({ day, soilTemperature }) => day === localDay() && soilTemperature !== undefined)) return;
       const pending = new AbortController();
       controller = pending;
       setLoading(true);

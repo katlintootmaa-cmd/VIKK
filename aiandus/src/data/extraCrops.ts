@@ -1,13 +1,11 @@
 import type { Crop } from '../calendar.ts';
 
 const springGreenhouse = 'https://jardin.ee/koogiviljade-kulvikalender-millal-on-oige-aeg-kulvata/';
-const springGrains = 'https://www.yara.ee/siteassets/tools/teatmik/teatmik_2024-06web.pdf';
 const paprika = 'https://aianduskool.ee/katrinu/Paprika_katmikalal.pdf';
 const sweetCorn = 'https://www.kekkila.ee/taimeraamat/mais/';
 const localSwede = 'https://metk.agri.ee/kohalik-sinine';
 const vegetableGuide = 'https://dspace.emu.ee/server/api/core/bitstreams/4722c2e5-7b08-438c-b103-82edfce86b88/content';
 const onion = 'https://www.eestiloodus.ee/arhiiv/EL01-2024.pdf';
-const springGrainAdvice = 'Aprilli lõpp ja mai algus on tavapärane külviaeg. Vali päev põllu haritavuse ja mullaniiskuse järgi.';
 
 // Month parts are represented by inclusive calendar dates. Local growing conditions determine the actual day.
 export const EXTRA_CROPS: Crop[] = [
@@ -114,43 +112,14 @@ export const EXTRA_CROPS: Crop[] = [
     source: paprika,
   },
   {
-    id: 'suvioder', name: 'Suvioder', icon: '🌾', category: 'field', method: 'outdoor',
-    lunar: 'waxing',
-    start: '04-21', end: '05-10', advice: springGrainAdvice, source: springGrains,
-  },
-  {
-    id: 'kaer', name: 'Kaer', icon: '🌾', category: 'field', method: 'outdoor',
-    lunar: 'waxing',
-    start: '04-21', end: '05-10', advice: springGrainAdvice, source: springGrains,
-  },
-  {
-    id: 'suvinisu', name: 'Suvinisu', icon: '🌾', category: 'field', method: 'outdoor',
-    lunar: 'waxing',
-    start: '04-21', end: '05-10', advice: springGrainAdvice, source: springGrains,
-  },
-  {
-    id: 'talirukis', name: 'Talirukis', icon: '🌾', category: 'field', method: 'outdoor',
-    lunar: 'waxing',
-    start: '08-25', end: '09-05',
-    advice: 'Külviaeg peab jätma rukkile sügisel võrsumiseks aega. Saartel võib sobida hilisem külv.',
-    source: 'https://www.maheklubi.ee/upload/Editor/New%20Folder/mahepollumajanduse_alused.pdf',
-  },
-  {
-    id: 'silomais', name: 'Silomais', icon: '🌽', category: 'field', method: 'outdoor',
-    lunar: 'waxing',
-    start: '05-08', end: '05-14',
-    advice: 'Mai teine nädal on Eestis tavapärane. Külviaja määrab mulla soojus külvisügavusel. Oota, kui muld on veel külm.',
-    source: 'https://metk.agri.ee/sites/default/files/documents/2025-11/Jatkusuutlik-silotootmine-kasiraamat_0.pdf',
-  },
-  {
-    id: 'suhkrumais-ettekasvatus', name: 'Suhkrumais', icon: '🌽', category: 'field', method: 'indoors',
+    id: 'suhkrumais-ettekasvatus', name: 'Suhkrumais', icon: '🌽', method: 'indoors',
     lunar: 'waxing',
     start: '05-11', end: '05-27',
     advice: 'Vali varajane sort ja külva potti 2–3 nädalat enne plaanitud väljaistutamist. Nihuta külviaega, kui öökülmaoht lükkab istutamise edasi.',
     source: sweetCorn,
   },
   {
-    id: 'suhkrumais-istutamine', name: 'Suhkrumais', icon: '🌽', category: 'field', method: 'outdoor-plant',
+    id: 'suhkrumais-istutamine', name: 'Suhkrumais', icon: '🌽', method: 'outdoor-plant',
     start: '06-01', end: '06-10',
     advice: 'Karasta taimi enne istutamist. Istuta päikeselisse, sooja kasvukohta pärast öökülmaohu möödumist.',
     source: sweetCorn,

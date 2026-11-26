@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { CROPS, METHOD, isPlanting, tallinnTime } from './calendar';
+import { METHOD, isPlanting, tallinnTime, type Crop } from './calendar';
 import type { Entry } from './journal';
 
 export const remindersAvailable = true;
@@ -26,7 +26,7 @@ export async function enableReminders(): Promise<boolean> {
   return hasPermission(await Notifications.requestPermissionsAsync());
 }
 
-export async function syncReminders(entries: Entry[]): Promise<void> {
+export async function syncReminders(entries: Entry[], crops: Crop[]): Promise<void> {
   const allowed = hasPermission(await Notifications.getPermissionsAsync());
   const desired = new Map<string, { entry: Entry; date: Date }>();
   for (const entry of entries) {
@@ -46,7 +46,7 @@ export async function syncReminders(entries: Entry[]): Promise<void> {
     }
   }
   for (const [identifier, { entry, date }] of desired) {
-    const crop = CROPS.find(({ id }) => id === entry.cropId);
+    const crop = crops.find(({ id }) => id === entry.cropId);
     if (!crop) continue;
     await Notifications.scheduleNotificationAsync({
       identifier,

@@ -12,12 +12,15 @@ Kuukülv on koduaednikule, kes kasvatab köögivilju aias, rõdul või kasvuhoon
 
 - Vaadata avamaa, ettekasvatuse ja kütteta kasvuhoone külvi- ning istutusaegu. Näiteks saab redist ja aedsalatit külvata otse kasvuhoonesse ning tomatile, kurgile ja paprikale valida kasvuhoonesse istutamise aja.
 - Planeerida kaalika ja valge peakapsa ettekasvatust ja väljaistutamist, porgandi külvi kasvuhoonesse, sibula ettekasvatust ja tippsibula istutamist ning tilli, spinati ja söögipeedi otsekülvi.
-- Vaadata filtri „Põllukultuurid” alt suviodra, kaera, suvinisu, talirukki ja silomaisi otsekülvi ning suhkrumaisi ettekasvatuse ja avamaale istutamise ligikaudseid aegu.
+- Vaadata suhkrumaisi ettekasvatuse ja avamaale istutamise ligikaudseid aegu.
 - Vaadata 2025.–2031. aasta kuufaase ning leida külviaknas päev, mil kell 12 Eesti aja järgi kehtib valitud kuufaas.
+- Valida kalendris kas kuupäev koos selle kuufaasiga või kuufaas (kasvav või kahanev kuu), mille järgi äpp näitab kolm järgmist sobivat kuupäevavahemikku.
 - Salvestada külviplaan valitud kuupäevaks või külviperioodiks ja lülitada telefonis sisse meeldetuletus.
 - Pidada külvipäevikut, märkida plaan tehtuks või lisada külv tagantjärele koos sordi ja märkmetega.
 - Kasutada külvikalendrit ja külvipäevikut ka võrguühenduseta.
-- Vaadata valitud Eesti asula seitsme päeva ilmaprognoosi ja võimalikku öökülmaohtu.
+- Vaadata valitud Eesti asula seitsme päeva ilmaprognoosi, võimalikku öökülmaohtu ning mulla temperatuuri ja niiskust.
+- Leida tavapärase külviakna sees prognoosi järgi päevad, mil õhu ja mulla temperatuur vastavad kultuuri lävenditele, ning plaanida nende põhjal külv.
+- Lisada oma kultuure, pidada vaates „Aed“ peenarde ajalugu, saada külvikorra ja naabertaimede soovitusi ning jälgida istutuse hooldustöid.
 - Lugeda taimehoolduse juhiseid, arvutada potitomati ja potikurgi järgmist väetamisaega ning vaadata aiatööde pärimuslikke soovitusi.
 
 ## Tehnoloogiad
@@ -67,7 +70,7 @@ Tüübikontrolli käivitab `npm run typecheck` ja testid käivitab `npm test`.
 
 ### Külvikalender
 
-Kalender näitab valitud taime ja töö ajavahemikku koos allikaviitega. Otsekülvil, ettekasvatusel ja istutamisel on eraldi ajad. Päeva vaates on vajaduse korral ka märkus mulla temperatuuri või öökülma kohta. Põllukultuuride ajad lähtuvad kasvatusjuhistest ning sordist ja kohalikest oludest sõltuvad täpsemad tingimused on kirjas töö juures.
+Kalender näitab valitud taime ja töö ajavahemikku koos allikaviitega. Otsekülvil, ettekasvatusel ja istutamisel on eraldi ajad. Päeva vaates on vajaduse korral ka märkus mulla temperatuuri või öökülma kohta. Sordist ja kohalikest oludest sõltuvad täpsemad tingimused on kirjas töö juures.
 
 Äpp kasutab külvi- ja ettekasvatussoovitustes astronoomilist Kuu seisu kell 12.00 Eesti aja järgi. Kasvav periood algab noorkuu hetkel ja kahanev täiskuu hetkel. Kui vahetus toimub täpselt keskpäeval, kehtib juba algav periood. Kalender soovitab ainult valitud kuufaasile vastavaid päevi kasvatusjuhise külviaknas.
 
@@ -86,6 +89,18 @@ Plaani tehtuks märkimisel pakub päevik tänast kuupäeva. Kui külv toimus mõ
 Äpp salvestab valitud asula ja selle koordinaadid ning seob prognoosi asula ja kuupäevadega. Prognoos uueneb asula vahetamisel või käsitsi. Äpi avamisel ja esiplaanile naasmisel küsitakse uus prognoos siis, kui viimasest edukast laadimisest on möödas vähemalt tund.
 
 Kui kohaliku öö tunniprognoos näitab 0 °C või vähem, kuvatakse märkus võimaliku öökülma kohta. Külviaken ja kuufaasi soovitus on nähtaval ka väljaspool prognoosiperioodi.
+
+### Ilmapõhine külviaken
+
+Seitsme päeva prognoosist moodustatakse tavapärase külviakna sees järjestikuste päevade vahemikud. Sobiv päev vastab välisõhu miinimumi ja mulla temperatuuri lävendile. Kasvuhoonerežiimis saab seadistada välisõhu külmapiiri. Prognoos kuvab õuemulla temperatuuri 6 cm sügavusel ja mahulist niiskust 3–9 cm sügavusel ööpäeva keskmistena. Sisseehitatud kultuuride lävendid on orienteeruvad.
+
+### Aed
+
+Kasutaja saab lisada oma kultuuri koos külvihooaja, istutusvahede, lävendite, taimesugukonna ja hooldustööde ajastusega. Peenra ajalugu arvestab sama taimesugukonna istutusi kahe aasta kaugusel. Istutuse või otsekülvi kuupäevast tekivad kastmise, vajaduse korral harvendamise, väetamise ja saagiküpsuse kontrollid, mille saab tehtuks märkida. [RHS-i külvikorra juhis](https://www.rhs.org.uk/vegetables/crop-rotation) · [RHS-i istutusvahed](https://www.rhs.org.uk/education-learning/school-gardening/resources/food-growing/vegetable-crop-planner)
+
+### Kuupäevad
+
+Äpp kuvab täiskuupäevad kujul `PP-KK-AAAA`. Kuupäevavälja saab sisestada ka kujul `PP-KK-AA`, mis tähistab aastaid 2000–2099.
 
 ### Taimehooldus
 

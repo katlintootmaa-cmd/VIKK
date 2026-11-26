@@ -6,11 +6,14 @@ import { AccessibilityInfo, ActivityIndicator, AppState, Modal, Platform, Pressa
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { CareView } from './src/CareView';
 import { CARE_TRADITION } from './src/care';
+import { ForecastWindow, type ForecastSite } from './src/ForecastWindow';
+import { GardenView, GreenhouseForm } from './src/GardenView';
 import {
   CROPS, LUNAR_PERIOD_NAME, METHOD, PHASE_NAMES, TIME_ZONE, TRADITION, USNO, changeMonth, formatDay, inSeason, localDay,
-  calendarSeason, cropChoice, isPlanting, lunarPeriod, monthGrid, moonEvent, nextWindow, recommended, sowingWindow, sowingWindowCoverage, tallinnTime, withSowingPeriod, type Crop, type Day,
+  calendarSeason, cropChoice, isPlanting, lunarPeriod, monthGrid, moonEvent, nextWindow, recommended, sowingWindow, sowingWindowCoverage, tallinnTime, upcomingLunarRanges, withSowingPeriod, type Crop, type Day, type LunarPeriod,
 } from './src/calendar';
 import { Button, Choice, EntryEditor, IconButton, PlacePicker, Source, WeatherDay, degrees, weatherIcon, type EditorRequest, type Icon } from './src/components';
+import { emptyGarden, plantingTasks, taskLabels, type Garden } from './src/garden';
 import type { Entry } from './src/journal';
 import { enableReminders, syncReminders } from './src/reminders';
 import { read, write } from './src/storage';
@@ -23,21 +26,21 @@ const tabs = [
   { id: 'calendar', name: 'Kalender', icon: 'calendar-outline' },
   { id: 'care', name: 'Hooldus', icon: 'leaf-outline' },
   { id: 'journal', name: 'Päevik', icon: 'book-outline' },
+  { id: 'garden', name: 'Aed', icon: 'grid-outline' },
 ] as const;
 type Tab = typeof tabs[number]['id'];
 const journalTabs = [{ id: 'done', name: 'Tehtud tööd' }, { id: 'planned', name: 'Plaanid' }] as const;
 const filters = [
   ['all', 'Kõik'], ['outdoor', 'Avamaale külv'], ['indoors', 'Ettekasvatus'],
   ['greenhouse-sow', 'Kasvuhoonesse külv'], ['greenhouse-plant', 'Kasvuhoonesse istutamine'],
-  ['outdoor-plant', 'Avamaale istutamine'], ['field', 'Põllukultuurid'],
+  ['outdoor-plant', 'Avamaale istutamine'],
 ] as const;
 type CropFilter = typeof filters[number][0];
-const matchesFilter = (crop: Crop, filter: CropFilter) =>
-  filter === 'all' || (filter === 'field' ? crop.category === 'field' : crop.method === filter);
+const matchesFilter = (crop: Crop, filter: CropFilter) => filter === 'all' || crop.method === filter;
 const availableFilters = filters.filter(([filter]) => CROPS.some((crop) => matchesFilter(crop, filter)));
 const moonGlyph: Record<string, string> = { 'New Moon': '○', 'First Quarter': '◑', 'Full Moon': '●', 'Last Quarter': '◐' };
-const fullDate: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-const monthDay: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' };
+const weekdayName = new Intl.DateTimeFormat('et-EE', { weekday: 'long', timeZone: 'UTC' });
+const fullDay = (day: Day) => `${weekdayName.format(new Date(day))}, ${formatDay(day)}`;
 const monthOn = ['jaanuaril', 'veebruaril', 'märtsil', 'aprillil', 'mail', 'juunil', 'juulil', 'augustil', 'septembril', 'oktoobril', 'novembril', 'detsembril'];
 type PressableHandle = ComponentRef<typeof Pressable>;
 
@@ -53,6 +56,10 @@ const sowingTradition = {
 };
 const sowingPeriods = [['default', 'Kultuuri vaikevalik'], ['waxing', 'Kasvav kuu'], ['waning', 'Kahanev kuu']] as const;
 type SowingPreference = typeof sowingPeriods[number][0];
+const calendarViews = [['calendar', 'Vali kuupäev'], ['phase', 'Vali kuufaas']] as const;
+type CalendarView = typeof calendarViews[number][0];
+const lunarChoices = [['waxing', 'Kasvav kuu'], ['waning', 'Kahanev kuu']] as const;
+const dayCount = (start: Day, end: Day) => Math.round((Date.parse(end) - Date.parse(start)) / 86_400_000) + 1;
 const recommendationLabel = (crop: Crop) => isPlanting(crop.method) ? 'Pärimuslik soovitus' : 'Kuufaasi soovitus';
 
 function Disclosure({ title, children }: { title: string; children: ReactNode }) {
@@ -75,7 +82,7 @@ function DayDetails({ day, crop, showWindow = false }: { day: Day; crop: Crop; s
   const isRecommended = recommended(crop, day);
   const window = showWindow ? sowingWindow(crop, day.slice(0, 4)) : undefined;
   return <>
-    <Text accessibilityRole="header" style={s.subheading}>{formatDay(day, fullDate)} · {crop.name}</Text>
+    <Text accessibilityRole="header" style={s.subheading}>{fullDay(day)} · {crop.name}</Text>
     <Text style={s.small}>{METHOD[crop.method]} · {inSeason(crop, day) ? activityTime : `väljaspool ${activityTime}a`}</Text>
     {window && <Text style={s.small}>Ligikaudne {activityTime} {formatDay(window.start)} – {formatDay(window.end)}</Text>}
     {isRecommended && <Text style={s.badge}>{recommendationLabel(crop)}</Text>}
@@ -88,7 +95,7 @@ function DayDetails({ day, crop, showWindow = false }: { day: Day; crop: Crop; s
       {planting && period && <Text style={s.small}>Kuu keskpäeval · {LUNAR_PERIOD_NAME[period]}</Text>}
       {phase && <Text style={s.small}>{PHASE_NAMES[phase.phase]} kell {phaseClock.format(new Date(phase.instant))} Eesti aja järgi</Text>}
       <View style={s.wrap}>
-        <Source title={planting ? 'Istutusaja allikas' : 'Külviaja allikas'} url={crop.source} />
+        {crop.source && <Source title={planting ? 'Istutusaja allikas' : 'Külviaja allikas'} url={crop.source} />}
         <Source title="Kuufaaside allikas (USNO)" url={USNO} />
         {planting && crop.lunar && <Source title="Pärimusreegli allikas" url={CARE_TRADITION} />}
       </View>
@@ -114,15 +121,18 @@ function focusControl(control: PressableHandle | null) {
   else AccessibilityInfo.sendAccessibilityEvent(control, 'focus');
 }
 
+const forecastWeekday = new Intl.DateTimeFormat('et-EE', { weekday: 'narrow', timeZone: 'UTC' });
+const calendarMonth = new Intl.DateTimeFormat('et-EE', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+const forecastTime = new Intl.DateTimeFormat('et-EE', { timeZone: TIME_ZONE, hour: '2-digit', minute: '2-digit' });
+
 function WeatherCard({ place, currentDay, selectDay, choosePlace, weather }: {
   place: Place; currentDay: Day; selectDay: (day: Day) => void; choosePlace: () => void; weather: ReturnType<typeof useWeather>;
 }) {
   const { forecast, error, loading, refresh } = weather;
   const weatherToday = forecast?.days.find(({ day }) => day === currentDay);
   const days = forecast?.days.filter(({ day }) => day >= currentDay) ?? [];
-  const loadedTime = forecast && new Intl.DateTimeFormat('et-EE', {
-    timeZone: TIME_ZONE, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-  }).format(new Date(forecast.loadedAt));
+  const loadedAt = forecast && new Date(forecast.loadedAt);
+  const loadedTime = loadedAt && `${formatDay(localDay(loadedAt))} ${forecastTime.format(loadedAt)}`;
   return <View style={s.hero}>
     <View pointerEvents="none" style={s.orbit} /><View pointerEvents="none" style={s.orbitInner} />
     <View style={s.between}>
@@ -148,7 +158,7 @@ function WeatherCard({ place, currentDay, selectDay, choosePlace, weather }: {
     {days.length > 0 && <View style={s.forecastStrip}>{days.map(({ day, high, code }) => (
       <Pressable key={day} accessibilityRole="button" accessibilityLabel={`${formatDay(day)}, ${weatherLabel(code)}, ${degrees(high)}`}
         onPress={() => selectDay(day)} style={[s.forecastCell, day === currentDay && s.forecastSelected]}>
-        <Text style={[s.small, s.onGreen]}>{formatDay(day, { weekday: 'narrow' })}</Text>
+        <Text style={[s.small, s.onGreen]}>{forecastWeekday.format(new Date(day))}</Text>
         <Ionicons name={weatherIcon(code)} size={17} color={color.white} />
         <Text style={[s.small, s.white]}>{degrees(high)}</Text>
       </Pressable>
@@ -157,8 +167,9 @@ function WeatherCard({ place, currentDay, selectDay, choosePlace, weather }: {
   </View>;
 }
 
-function CropRow({ crop, detail, onPress }: { crop: Crop; detail: string; onPress: () => void }) {
-  return <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => [s.item, pressed && s.disabled]}>
+function CropRow({ crop, detail, onPress, disabled }: { crop: Crop; detail: string; onPress: () => void; disabled?: boolean }) {
+  return <Pressable onPress={onPress} accessibilityRole="button" disabled={disabled}
+    style={({ pressed }) => [s.item, (pressed || disabled) && s.disabled]}>
     <View style={s.thumb}><Text style={s.emoji}>{crop.icon}</Text></View>
     <View style={s.grow}>
       <Text style={s.strong}>{crop.name}</Text>
@@ -168,11 +179,13 @@ function CropRow({ crop, detail, onPress }: { crop: Crop; detail: string; onPres
   </Pressable>;
 }
 
-function Month({ day, crop, entries, select }: { day: Day; crop: Crop; entries: Entry[]; select: (day: Day) => void }) {
+function Month({ day, crop, entries, select }: {
+  day: Day; crop: Crop; entries: Entry[]; select: (day: Day) => void;
+}) {
   return <View style={s.card}>
     <View style={s.between}>
       <IconButton label="Eelmine kuu" icon="chevron-back" onPress={() => select(changeMonth(day, -1))} />
-      <Text accessibilityRole="header" style={[s.strong, { textAlign: 'center', flexShrink: 1 }]}>{formatDay(day, { month: 'long', year: 'numeric' })}</Text>
+      <Text accessibilityRole="header" style={[s.strong, { textAlign: 'center', flexShrink: 1 }]}>{calendarMonth.format(new Date(day))}</Text>
       <IconButton label="Järgmine kuu" icon="chevron-forward" onPress={() => select(changeMonth(day, 1))} />
     </View>
     <View style={s.grid}>
@@ -183,7 +196,7 @@ function Month({ day, crop, entries, select }: { day: Day; crop: Crop; entries: 
         const suggested = recommended(crop, date);
         const activities = entries.filter((entry) => entry.day <= date && (entry.end ?? entry.day) >= date);
         const mark = [event && moonGlyph[event.phase], suggested && '✦', activities.length > 0 && '•'].filter(Boolean).join(' ');
-        const label = [formatDay(date, fullDate), event && PHASE_NAMES[event.phase], inSeason(crop, date) && (isPlanting(crop.method) ? 'istutusaeg' : 'külviaeg'), suggested && recommendationLabel(crop),
+        const label = [fullDay(date), event && PHASE_NAMES[event.phase], inSeason(crop, date) && (isPlanting(crop.method) ? 'istutusaeg' : 'külviaeg'), suggested && recommendationLabel(crop),
           activities.length > 0 && `Päevikukirjeid ${activities.length}`].filter(Boolean).join(', ');
         return <Pressable key={date} accessibilityRole="button" accessibilityLabel={label}
           accessibilityState={{ selected: date === day }} onPress={() => select(date)}
@@ -195,7 +208,7 @@ function Month({ day, crop, entries, select }: { day: Day; crop: Crop; entries: 
     </View>
     <View style={s.wrap}>
       <Text style={s.badge}>✦ Kuu järgi soovitatud</Text>
-      <Text style={s.small}>○ ◑ ● ◐ Kuufaas · • Külvikirje</Text>
+      <Text style={s.small}>○ ◑ ● ◐ Kuufaas · • Päevikukirje</Text>
     </View>
   </View>;
 }
@@ -205,11 +218,11 @@ function AppContent() {
   const [tab, setTab] = useState<Tab>('today');
   const [journalKind, setJournalKind] = useState<Entry['kind']>('done');
   const [day, setDay] = useState(today);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [calendarView, setCalendarView] = useState<CalendarView>('calendar');
+  const [phaseOverride, setPhaseOverride] = useState<{ cropId: string; period: LunarPeriod }>();
   const [detailDay, setDetailDay] = useState<Day>();
   const detailsTrigger = useRef<PressableHandle>(null);
   const nextDayTrigger = useRef<PressableHandle>(null);
-  const suggestionRows = useRef(new Map<Day, PressableHandle>());
   const closeDetails = useRef<PressableHandle>(null);
   const [selectedCrop, setCrop] = useState(CROPS[0]);
   const [sowingPreference, setSowingPreference] = useState<SowingPreference>('default');
@@ -217,6 +230,11 @@ function AppContent() {
   const [method, setMethod] = useState<CropFilter>('all');
   const [entries, setEntries] = useState<Entry[]>([]);
   const [ready, setReady] = useState(false);
+  const [garden, setGarden] = useState(emptyGarden);
+  const [gardenReady, setGardenReady] = useState(false);
+  const [greenhouseEditor, setGreenhouseEditor] = useState(false);
+  const [plantingDay, setPlantingDay] = useState<Day>();
+  const [siteOverride, setSiteOverride] = useState<{ cropId: string; site: ForecastSite }>();
   const [notice, setNotice] = useState('');
   const [place, setPlace] = useState<Place>();
   const [choosingPlace, setChoosingPlace] = useState(false);
@@ -224,11 +242,15 @@ function AppContent() {
   const [deleting, setDeleting] = useState<string>();
   const saving = useRef(false);
   const latestEntries = useRef<Entry[]>([]);
+  const latestGarden = useRef(emptyGarden);
+  const savingGarden = useRef(false);
   const reminderQueue = useRef<Promise<void>>(Promise.resolve());
   const weather = useWeather(place);
+  const crops = [...CROPS, ...garden.crops];
 
   const sync = useCallback(() => {
-    const next = reminderQueue.current.catch(() => undefined).then(() => syncReminders(latestEntries.current));
+    const next = reminderQueue.current.catch(() => undefined)
+      .then(() => syncReminders(latestEntries.current, [...CROPS, ...latestGarden.current.crops]));
     reminderQueue.current = next;
     return next;
   }, []);
@@ -240,29 +262,35 @@ function AppContent() {
       latestEntries.current = journal ?? [];
       setEntries(latestEntries.current);
       setReady(true);
-      void sync().catch(() => undefined);
     }).catch(() => { if (active) setNotice('Külvipäevikut ei õnnestunud avada. Proovi äpp uuesti käivitada.'); });
+    void read<Garden>('garden').then((saved) => {
+      if (!active) return;
+      latestGarden.current = saved ?? emptyGarden;
+      setGarden(latestGarden.current);
+      setGardenReady(true);
+    }).catch(() => { if (active) setNotice('Aiaplaani ei õnnestunud avada. Proovi äpp uuesti käivitada.'); });
     void read<Place>('place').catch(() => null).then((saved) => { if (active) setPlace(saved ?? DEFAULT_PLACE); });
     return () => { active = false; };
-  }, [sync]);
+  }, []);
 
   useEffect(() => {
+    if (ready && gardenReady) void sync().catch(() => undefined);
     const update = () => setToday(localDay());
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;
       update();
-      if (ready) void sync().catch(() => undefined);
+      if (ready && gardenReady) void sync().catch(() => undefined);
     });
     const timer = setInterval(update, 60_000);
     return () => { subscription.remove(); clearInterval(timer); };
-  }, [ready, sync]);
+  }, [ready, gardenReady, sync]);
 
   function openDay(date: Day, selectedCrop?: Crop) {
     if (selectedCrop) {
       setCrop(selectedCrop);
       if (!matchesFilter(selectedCrop, method)) setMethod('all');
-      setShowSuggestions(false);
     }
+    setCalendarView('calendar');
     setDay(date);
     setTab('calendar');
   }
@@ -274,9 +302,8 @@ function AppContent() {
   function selectCalendarFilter(filter: CropFilter) {
     setMethod(filter);
     if (matchesFilter(crop, filter)) return;
-    const first = CROPS.find((item) => matchesFilter(item, filter));
+    const first = crops.find((item) => matchesFilter(item, filter));
     if (first) setCrop(first);
-    setShowSuggestions(false);
   }
 
   function selectJournalKind(kind: Entry['kind']) {
@@ -289,10 +316,29 @@ function AppContent() {
     setTab('journal');
   }
 
+  function openPlanting(date: Day, plant: Crop) {
+    setCrop(plant);
+    setPlantingDay(date);
+    setTab('garden');
+  }
+
   async function persistJournal(next: Entry[]) {
     await write('journal', next);
     latestEntries.current = next;
     setEntries(next);
+  }
+
+  async function saveGarden(change: (current: Garden) => Garden) {
+    if (!gardenReady || savingGarden.current) throw new Error('Garden is busy');
+    savingGarden.current = true;
+    try {
+      const next = change(latestGarden.current);
+      await write('garden', next);
+      latestGarden.current = next;
+      setGarden(next);
+    } finally {
+      savingGarden.current = false;
+    }
   }
 
   async function saveEntry(value: Omit<Entry, 'id'>, existingId?: string) {
@@ -317,7 +363,11 @@ function AppContent() {
       await sync().catch(() => { message = 'Kirje salvestatud. Meeldetuletuste uuendamine ebaõnnestus.'; });
       setNotice(message);
       setEditor(undefined);
-      openJournal(entry.kind);
+      if (editor?.fromRecommendation) {
+        openDay(entry.day, crops.find(({ id }) => id === entry.cropId));
+      } else {
+        openJournal(entry.kind);
+      }
     } finally {
       saving.current = false;
     }
@@ -339,7 +389,7 @@ function AppContent() {
     }
   }
 
-  const filtered = CROPS.filter((item) => matchesFilter(item, method));
+  const filtered = crops.filter((item) => matchesFilter(item, method));
   const activeCrops = filtered.filter((item) => inSeason(item, today));
   const cropsForDay = filtered.filter((item) => inSeason(item, day));
   const upcoming = filtered.map((item) => ({ crop: item, start: nextWindow(item, today).start }))
@@ -351,7 +401,17 @@ function AppContent() {
   const planting = isPlanting(crop.method);
   const seasonLabel = planting ? 'Istutusaeg' : 'Külviaeg';
   const dayLabel = planting ? 'istutuspäev' : 'külvipäev';
+  const phasePeriod: LunarPeriod = phaseOverride?.cropId === crop.id ? phaseOverride.period : crop.lunar ?? 'waxing';
+  const phaseRanges = tab === 'calendar' && calendarView === 'phase' ? upcomingLunarRanges(crop, phasePeriod, today) : undefined;
+  const defaultSite: ForecastSite = crop.method === 'indoors' ? 'indoors'
+    : crop.method === 'greenhouse-sow' || crop.method === 'greenhouse-plant' ? 'greenhouse' : 'outdoor';
+  const forecastSite = siteOverride?.cropId === crop.id ? siteOverride.site : defaultSite;
   const dayEntries = entries.filter((entry) => entry.day <= day && (entry.end ?? entry.day) >= day);
+  const dayTasks = garden.plantings.flatMap((planting) => {
+    const plant = crops.find(({ id }) => id === planting.cropId);
+    return plant ? plantingTasks(planting, plant).filter((task) => task.day === day)
+      .map((task) => ({ ...task, key: `${planting.id}:${task.id}`, name: plant.name, bed: planting.bed })) : [];
+  });
   const journalEntries = entries.filter((entry) => entry.kind === journalKind)
     .sort((a, b) => journalKind === 'planned' ? a.day.localeCompare(b.day) : b.day.localeCompare(a.day));
 
@@ -367,7 +427,7 @@ function AppContent() {
           <View style={s.logo}><Ionicons name="leaf-outline" size={20} color={color.leaf} /></View>
           <Text accessibilityRole="header" style={s.wordmark}>Kuukülv</Text>
         </View>
-        <Text style={[s.small, { textAlign: 'right', flexShrink: 1 }]}>{formatDay(today, { weekday: 'short', day: 'numeric', month: 'short' })}</Text>
+        <Text style={[s.small, { textAlign: 'right', flexShrink: 1 }]}>{formatDay(today)}</Text>
       </View>
       <ScrollView key={tab === 'journal' ? journalKind : tab} contentContainerStyle={s.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {!!notice && <View style={[s.card, s.between]}>
@@ -375,7 +435,7 @@ function AppContent() {
           <IconButton label="Sulge teade" icon="close" onPress={() => setNotice('')} />
         </View>}
         {tab === 'today' && <>
-          <Text accessibilityRole="header" style={s.heading}>{formatDay(today, fullDate)}</Text>
+          <Text accessibilityRole="header" style={s.heading}>{fullDay(today)}</Text>
           {place ? <WeatherCard place={place} currentDay={today} selectDay={openDay} choosePlace={() => setChoosingPlace(true)} weather={weather} /> : <ActivityIndicator color={color.green} />}
           <View style={s.section}>
             <Text accessibilityRole="header" style={s.subheading}>Mida täna külvata või istutada?</Text>
@@ -386,7 +446,7 @@ function AppContent() {
             {activeCrops.length === 0 && <>
               <Text accessibilityRole="header" style={s.subheading}>Järgmised külvi- ja istutustööd</Text>
               <View style={s.card}>{upcoming.slice(0, 3).map(({ crop: item, start }) => <CropRow key={item.id} crop={item}
-                detail={`${formatDay(start, { day: 'numeric', month: 'short', year: 'numeric' })} · ${METHOD[item.method]}`} onPress={() => openDay(start, item)} />)}</View>
+                detail={`${formatDay(start)} · ${METHOD[item.method]}`} onPress={() => openDay(start, item)} />)}</View>
             </>}
           </View>
           <Source url={WEATHER_SOURCE} title="Ilmaandmed: Open-Meteo" />
@@ -399,7 +459,6 @@ function AppContent() {
           <Choice value={method} options={availableFilters} onChange={selectCalendarFilter} />
           <Choice value={crop.id} options={filtered.map(cropChoice)} onChange={(id) => {
             setCrop(filtered.find((item) => item.id === id) ?? selectedCrop);
-            setShowSuggestions(false);
           }} />
           <View style={s.card}>
             <Text accessibilityRole="header" style={s.subheading}>{crop.name} · {METHOD[crop.method]}</Text>
@@ -410,13 +469,13 @@ function AppContent() {
                 <Text style={s.small}>Valik rakendub kõigile külvidele ja ettekasvatusele äpi sellel avamiskorral.</Text>
               </Disclosure>
             </>}
-            <Text style={s.body}>Ligikaudne {seasonLabel.toLowerCase()} {formatDay(season.window.start)} – {formatDay(season.window.end, { ...monthDay, year: 'numeric' })}</Text>
+            <Text style={s.body}>Ligikaudne {seasonLabel.toLowerCase()} {formatDay(season.window.start)} – {formatDay(season.window.end)}</Text>
             <Text accessibilityLiveRegion="polite" style={s.strong}>{season.status === 'upcoming'
               ? `${seasonLabel} algab ${formatDayOn(season.window.start)}`
               : season.status === 'active'
                 ? `${seasonLabel} kestab ${formatDayOn(season.window.end)}`
                 : `${calendarYear === today.slice(0, 4) ? 'Selle aasta' : `${calendarYear}. aasta`} ${seasonLabel.toLowerCase()} on möödas`}</Text>
-            <Source title={planting ? 'Istutusaja allikas' : 'Külviaja allikas'} url={crop.source} />
+            {crop.source && <Source title={planting ? 'Istutusaja allikas' : 'Külviaja allikas'} url={crop.source} />}
             {season.suggestion.status === 'found' && <>
               <Text style={s.strong}>{season.suggestion.earlierDataMissing
                 ? 'Esimene teadaolev' : 'Järgmine'} {planting ? 'pärimuslik istutuspäev' : 'külvipäev kuufaasi järgi'} · {formatDay(season.suggestion.day)}</Text>
@@ -444,22 +503,26 @@ function AppContent() {
                 start === end ? formatDay(start) : `${formatDay(start)} – ${formatDay(end)}`).join(', ')}.</Text>
             </Disclosure>}
           </View>
-          {crop.lunar && <Button title={showSuggestions ? 'Vaata kuukalendrit' : 'Vaata soovitatud päevi loendina'} onPress={() => setShowSuggestions(!showSuggestions)} />}
-          {crop.lunar && showSuggestions ? <View style={s.card}>
-            <Text accessibilityRole="header" style={s.subheading}>Soovitatud {dayLabel}ad</Text>
-            {season.days.length === 0 && <Text style={s.small}>Loendis pole praegu kuvatavaid päevi.</Text>}
-            {season.days.map((date) => <Pressable key={date}
-              ref={(row) => { if (row) suggestionRows.current.set(date, row); else suggestionRows.current.delete(date); }}
-              accessibilityRole="button" accessibilityLabel={`${formatDay(date, fullDate)}. ${recommendationLabel(crop)}.`}
-              style={s.item} onPress={() => {
-                detailsTrigger.current = suggestionRows.current.get(date) ?? null;
-                setDetailDay(date);
-              }}>
+          <Choice value={calendarView} options={calendarViews} onChange={setCalendarView} />
+          {phaseRanges ? <View style={s.card}>
+            <Text accessibilityRole="header" style={s.subheading}>Sobivad ajad kuufaasi järgi</Text>
+            <Choice value={phasePeriod} options={lunarChoices} onChange={(period) => setPhaseOverride({ cropId: crop.id, period })} />
+            <Text style={s.small}>{crop.name} · {METHOD[crop.method]}. Kolm järgmist vahemikku alates tänasest, mil kell 12 Eesti aja järgi on {LUNAR_PERIOD_NAME[phasePeriod]} ja päev jääb {seasonLabel.toLowerCase()}a.</Text>
+            {crop.lunar && crop.lunar !== phasePeriod && <Text style={s.small}>Selle kultuuri vaikevalik on {LUNAR_PERIOD_NAME[crop.lunar]}.</Text>}
+            {phaseRanges.ranges.map(({ start, end }) => <View key={start} style={s.item}>
               <View style={s.grow}>
-                <Text style={s.strong}>{formatDay(date, fullDate)}</Text>
-                <Text style={s.small}>{recommendationLabel(crop)}</Text>
+                <Text style={s.strong}>{start === end ? formatDay(start) : `${formatDay(start)} – ${formatDay(end)}`}</Text>
+                <Text style={s.small}>{dayCount(start, end) === 1 ? '1 päev' : `${dayCount(start, end)} päeva`}</Text>
               </View>
-            </Pressable>)}
+              <View style={s.wrap}>
+                <Button title="Vaata kalendris" subtle onPress={() => { setDay(start); setCalendarView('calendar'); }} />
+                <Button title="Planeeri" icon="add-outline" disabled={!ready}
+                  onPress={() => setEditor({ kind: 'planned', cropId: crop.id, day: start, end: end === start ? undefined : end })} />
+              </View>
+            </View>)}
+            {phaseRanges.ranges.length < 3 && <Text style={s.small}>{phaseRanges.missingData
+              ? `Kuufaasiandmed on äpis 2031. aasta lõpuni, seega ${phaseRanges.ranges.length ? 'rohkem' : 'sobivaid'} vahemikke ei saa arvutada.`
+              : `Järgmise kolme aasta jooksul ${phaseRanges.ranges.length ? 'rohkem sobivaid vahemikke' : 'sobivaid vahemikke'} ei leitud.`}</Text>}
           </View> : <Month day={day} crop={crop} entries={entries} select={setDay} />}
           <View style={s.card}>
             <DayDetails key={`${crop.id}-${day}`} day={day} crop={crop} />
@@ -470,31 +533,47 @@ function AppContent() {
             {selectedWeather ? <WeatherDay weather={selectedWeather} /> : <Text style={s.small}>{weather.loading ? 'Laadin prognoosi…' : 'Selle päeva prognoos pole saadaval.'}</Text>}
             {selectedWeather && weather.error && <Text style={s.small}>Viimati laaditud prognoos</Text>}
           </View>
+          <ForecastWindow crop={crop} day={day} today={today} forecast={weather.forecast} site={forecastSite}
+            selectSite={(site) => setSiteOverride({ cropId: crop.id, site })} greenhouseMin={garden.greenhouseMin} stale={weather.error}
+            loading={weather.loading} ready={ready && gardenReady} openGreenhouse={() => setGreenhouseEditor(true)}
+            plan={(start, end) => setEditor({ kind: 'planned', cropId: crop.id, day: start, end: end === start ? undefined : end })} />
           <View style={s.wrap}>
             <Button title={planting ? 'Lisa istutusplaan' : 'Lisa külviplaan'} icon="add-outline" primary disabled={!ready} onPress={() => setEditor({ kind: 'planned', cropId: crop.id, day })} />
             <Button title={planting ? 'Märgi istutatuks' : 'Märgi külvatuks'} icon="checkmark-outline" disabled={!ready || day > today} onPress={() => setEditor({ kind: 'done', cropId: crop.id, day })} />
+            <Button title="Lisa istutus aeda" disabled={!gardenReady} onPress={() => openPlanting(day, crop)} />
           </View>
           <View style={s.card}>
             <Text accessibilityRole="header" style={s.subheading}>Mida sel päeval külvata või istutada?</Text>
             {cropsForDay.length ? cropsForDay.map((item) => <CropRow key={item.id} crop={item}
-              detail={`${METHOD[item.method]}${recommended(withSowingPreference(item), day) ? ' · kuu järgi soovitatud' : ''}`} onPress={() => setCrop(item)} />)
+              detail={`${METHOD[item.method]}${recommended(withSowingPreference(item), day) ? ' · kuu järgi soovitatud' : ''}`}
+              disabled={!ready} onPress={() => {
+                setCrop(item);
+                setEditor({ kind: 'planned', cropId: item.id, day, fromRecommendation: true });
+              }} />)
               : <Text style={s.small}>Valitud taimede külvi- ja istutusajad sellele päevale ei jää.</Text>}
           </View>
           {!!dayEntries.length && <View style={s.card}>
             <Text accessibilityRole="header" style={s.subheading}>Selle päeva kirjed</Text>
             {dayEntries.map((entry) => {
-              const plant = CROPS.find((item) => item.id === entry.cropId);
+              const plant = crops.find((item) => item.id === entry.cropId);
               return plant && <Text key={entry.id} style={s.body}>
                 {[plant.name, METHOD[plant.method], entry.variety, entry.kind === 'done' ? 'Tehtud' : 'Plaanis'].filter(Boolean).join(' · ')}
               </Text>;
             })}
             <Button title="Ava päevik" onPress={() => openJournal(dayEntries.some(({ kind }) => kind === 'done') ? 'done' : 'planned')} />
           </View>}
+          {dayTasks.length > 0 && <View style={s.card}>
+            <Text accessibilityRole="header" style={s.subheading}>Selle päeva hooldustööd</Text>
+            {dayTasks.map((task) => <Text key={task.key} style={s.body}>{task.bed} · {task.name} · {taskLabels[task.kind]}{task.done ? ' · tehtud' : ''}</Text>)}
+            <Button title="Ava aed" onPress={() => { setPlantingDay(undefined); setTab('garden'); }} />
+          </View>}
         </>}
-        {tab === 'care' && <CareView crop={selectedCrop} setCrop={(selectedCrop) => {
-          setCrop(selectedCrop);
-          if (!matchesFilter(selectedCrop, method)) setMethod('all');
+        {tab === 'care' && <CareView crop={selectedCrop} crops={crops} setCrop={(item) => {
+          setCrop(item);
+          if (!matchesFilter(item, method)) setMethod('all');
         }} day={day} today={today} selectDay={setDay} openCalendar={() => setTab('calendar')} />}
+        {tab === 'garden' && <GardenView crops={crops} crop={crop} selectCrop={setCrop} garden={garden} ready={gardenReady} today={today}
+          save={saveGarden} openGreenhouse={() => setGreenhouseEditor(true)} initialDay={plantingDay} />}
         {tab === 'journal' && <>
           <Text accessibilityRole="header" style={s.heading}>Külvipäevik</Text>
           <View accessibilityRole="tablist" accessibilityLabel="Külvipäeviku vaated" style={s.wrap}>
@@ -509,7 +588,7 @@ function AppContent() {
           </View>
           {ready && !journalEntries.length && <Text style={s.small}>{journalKind === 'done' ? 'Tehtud töid veel pole.' : 'Plaane veel pole.'}</Text>}
           {journalEntries.map((entry) => {
-            const plant = CROPS.find((item) => item.id === entry.cropId);
+            const plant = crops.find((item) => item.id === entry.cropId);
             if (!plant) return null;
             return <View key={entry.id} style={s.card}>
               <View style={s.item}>
@@ -517,7 +596,7 @@ function AppContent() {
                 <View style={s.grow}>
                   <Text style={s.strong}>{plant.name} · {METHOD[plant.method]}</Text>
                   {!!entry.variety && <Text style={s.small}>Sort · {entry.variety}</Text>}
-                  <Text style={s.small}>{formatDay(entry.day, { day: 'numeric', month: 'long', year: 'numeric' })}{entry.end ? ` – ${formatDay(entry.end)}` : ''}</Text>
+                  <Text style={s.small}>{formatDay(entry.day)}{entry.end ? ` – ${formatDay(entry.end)}` : ''}</Text>
                 </View>
               </View>
               {entry.plannedDay && <Text style={s.small}>Algne plaan · {formatDay(entry.plannedDay)}</Text>}
@@ -528,6 +607,7 @@ function AppContent() {
                 <Button title="Loobu" onPress={() => setDeleting(undefined)} />
               </View> : <View style={s.wrap}>
                 {entry.kind === 'planned' && <Button title={isPlanting(plant.method) ? 'Märgi istutatuks' : 'Märgi külvatuks'} icon="checkmark-outline" subtle onPress={() => setEditor({ kind: 'done', cropId: plant.id, day: today, entry, completing: true })} />}
+                {entry.kind === 'done' && <Button title="Lisa aeda" disabled={!gardenReady} onPress={() => openPlanting(entry.day, plant)} />}
                 <Button title="Muuda" onPress={() => setEditor({ kind: entry.kind, cropId: plant.id, day: entry.day, entry })} />
                 <Button title="Kustuta" onPress={() => setDeleting(entry.id)} />
               </View>}
@@ -537,7 +617,11 @@ function AppContent() {
       </ScrollView>
       <View style={s.nav}>
         {tabs.map(({ id, name, icon }) => <Pressable key={id} accessibilityRole="tab" accessibilityState={{ selected: tab === id }}
-          onPress={() => id === 'journal' ? openJournal() : setTab(id)} style={s.navItem}>
+          onPress={() => {
+            setPlantingDay(undefined);
+            if (id === 'journal') openJournal();
+            else setTab(id);
+          }} style={s.navItem}>
           <View style={[s.navIcon, tab === id && s.navActive]}><Ionicons name={icon as Icon} size={20} color={color.green} /></View>
           <Text style={[s.navText, tab === id && s.navTextActive]}>{name}</Text>
         </Pressable>)}
@@ -555,7 +639,8 @@ function AppContent() {
           </View>
         </View>}
       </Modal>
-      {editor && <EntryEditor request={editor} today={today} close={() => setEditor(undefined)} save={saveEntry} />}
+      {editor && <EntryEditor request={editor} crops={crops} today={today} close={() => setEditor(undefined)} save={saveEntry} />}
+      {greenhouseEditor && <GreenhouseForm value={garden.greenhouseMin} close={() => setGreenhouseEditor(false)} save={saveGarden} />}
       {place && choosingPlace && <PlacePicker place={place} close={() => setChoosingPlace(false)} select={(selected) => {
         setPlace(selected);
         setChoosingPlace(false);

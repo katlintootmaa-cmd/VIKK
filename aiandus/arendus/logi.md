@@ -1,22 +1,38 @@
 # Kuukülvi arenduslogi
 
+## 2026-11-26
+
+- Ühendasin GitHubi versiooni (lisakultuurid, istutuse tööviisid, kuufaasi valik ja andmekatvus, arenduslogi kaust, ümber nimetatud agendid) kohaliku tööga (kuupäevavorming `PP-KK-AAAA`, mulla prognoos, ilmapõhine külviaken, vaade „Aed“ ja oma kultuurid). Konfliktid lahendasin failides `App.tsx`, `src/calendar.ts`, `src/components.tsx`, `src/CareView.tsx`, `src/reminders.native.ts`, `tests/calendar.test.mts`, `README.md` ja `.gitignore`. Kohalikud logikirjed tõstsin sellesse faili.
+- Eemaldasin Thuni päevatüübid (`src/thun.ts`, kalendri vaatevalik, test ja sõltuvus `astronomy-engine`). Kuufaasipõhine soovitus, ilma ja mulla järgi leitud külviaken jäid alles. Aia vormis valitakse taimeosa nüüd sildiga „Saagiks on“ (`plantParts` failis `src/garden.ts`).
+- Jätsin välja põllukultuurid suvioder, kaer, suvinisu, talirukis ja silomais ning filtri „Põllukultuurid“. Suhkrumais jäi tavakultuurina alles. Kahes kalendritestis asendasin kaera spinati ja tilliga.
+- Lisasin uutele kultuuridele orienteeruvad aiaprofiilid (temperatuurilävendid, istutusvahed, hooldustööde ajastus). Kasvuhoone- ja istutusvariandid kasutavad põhikultuuri profiili. Uus test kontrollib, et igal sisseehitatud kultuuril on profiil.
+- Tüübikontroll, kõik 25 testi ja Expo veebieksport õnnestusid. Brauseris ja telefonis ühendatud versiooni ei proovinud.
+- Lisasin kalendrisse valiku „Vali kuupäev“ / „Vali kuufaas“. Kuufaasi vaates valib kasutaja kasvava või kahaneva kuu ning äpp näitab valitud kultuurile kolm järgmist kuupäevavahemikku alates tänasest, mil päev jääb külvi- või istutusaega ja kell 12 kehtib valitud kuufaas. Vahemiku saab avada kalendris või sellest plaani teha. Valik kehtib ainult sellele kultuurile ega muuda kalendri soovitusi. Asendasin sellega soovitatud päevade loendi. Uus funktsioon `upcomingLunarRanges` (`src/calendar.ts`), kaks testi ning muudatus `App.tsx`-is. Tüübikontroll, kõik 27 testi ja veebieksport õnnestusid. Vaadet brauseris ega telefonis ei proovinud.
+- Korrastasin arenduslogi: panin kuupäevad uuemast vanemani ning tõstsin kohaliku arvuti tööd, mille täpne päev pole teada, eraldi jaotisse. Parandasin 24.11 sissekandes keelevea. Uuendasin arendusblogi kolme postitust praeguse äpi järgi ning lisasin postitused „Ilm, muld ja aed“ ning „Kuufaasi järgi sobivad vahemikud“. Kontrollisin blogi ja logi kohalikke viiteid.
+
+## 2026-11-21 – 2026-11-26
+
+Kohalikus arvutis tehtud tööd pärast 21.11 commit'i. Täpset päeva ei saa Giti ajaloost ega failide aegadest kindlaks teha. Need ühendati GitHubi versiooniga 26.11.
+
+- Muutsin äpi täiskuupäevad kujule `PP-KK-AAAA`. Külvipäeviku ja väetamise kuupäevaväljad lubavad ka kuju `PP-KK-AA`, kus kahekohaline aasta tähendab aastaid 2000–2099. Olemasolevad külvikirjed kuvatakse uues vormingus. Tüübikontroll, kõik üheksa testi ja Androidi rakenduse koodipaketi eksport õnnestusid. Telefonis on uus vorming veel proovimata.
+- Sidusin vaates „Mida sel päeval külvata?“ taime valiku eeltäidetud külvivormiga (`App.tsx`, `src/components.tsx`). Tänase ja varasema kuupäeva puhul saab samas vormis külvi tehtuks märkida. Salvestatud kirje kuvatakse kalendris vormile märgitud kuupäeval.
+- Ühendasin külvivormi, hooldusvaate ja meeldetuletused olemasoleva taimeloendiga ning arvestasin puuduva külviaja allikaga (`App.tsx`). Tüübikontroll, kõik üheksa testi ja Expo veebijärgu eksport õnnestusid. Chrome'is avasin soovitusloendist tulevase porgandikülvi plaani ja märkisin varasema hernekülvi tehtuks. Mõlemas vormis oli õige kuupäev ning salvestatud kirjed ilmusid kalendrisse ja päeviku salvestusse. Androidi ja iOS-i seadmetel külvivormi ei proovinud.
+- Pärast taimeloendi täiendamist panin kalendrisse naasmisel salvestatud taime otsima kogu taimeloendist, sh kasutaja lisatud taimede seast. Kordasin tüübikontrolli ja kõiki üheksat testi edukalt.
+- Lisasin kalendrisse Open-Meteo mulla temperatuuri ja mahulise niiskuse prognoosi. Külviakna arvutus leiab sobivad päevad tavapärase külviakna sees õhu ja mulla temperatuurilävendite järgi. Kasvuhoonel saab seadistada välisõhu külmapiiri. Tegelik Tallinna päring tagastas mõlemad mullaväljad kõigi seitsme päeva kohta.
+- Lisasin vaate „Aed“ oma kultuuride, istutusvahede ja naabertaimede soovitustega. Peenra ajalugu annab külvikorra soovituse taimesugukonna järgi. Istutuse või otsekülvi kuupäevast arvutatakse hooldustööde kuupäevad ja tehtud töö saab salvestada. Istutuse vormi saab avada ka kalendrist ja tehtud külvi juurest.
+- Lisasin kalendrisse Thuni pärimusliku juure-, lehe-, õie- ja viljapäeva valiku. Arvutus kasutab Astronomy Engine'i ja Kuu ekliptikale projitseeritud asukohta Eesti keskpäeval, mistõttu võivad päevad trükikalendrist erineda.
+- Tüübikontroll ja kõik 13 testi läbisid kontrolli. Expo eksport lõi Androidi, iOS-i ja veebijärgud. Chrome'is proovisin näidisilmaga oma kultuuri lisamist, külmapiiri muutmist, külviplaani salvestamist prognoosi järgi, Thuni vaadet, külvikorra hoiatust ja tehtud töö säilimist pärast lehe taasavamist. Telefonidel pole uusi vaateid veel proovitud.
+
 ## 2026-11-25
 
 - Delegeerisin kuufaaside reegli täpsustamise külviandmete spetsialistile ja rakendamise arendajale. Ülesanne hõlmab avamaa ja kasvuhoone otsekülvi, ettekasvatust ning põllukultuure. Kasvatusaken piirab kuupäevi ja pärimus jääb selgitavaks taustaks.
 - Arendaja lisas kõigile külvi- ja ettekasvatuskirjetele kuufaasi vaikevaliku ning võimaluse valida kasvav või kahanev kuu üheks äpi avamiskorraks. Kalender ja vaade Täna lähtuvad samast valikust. Pärimus selgitab vaikevalikut eraldi. Muudatused failides `App.tsx`, `src/calendar.ts`, `src/data/extraCrops.ts`, `tests/calendar.test.mts` ja `README.md`.
 - Ülevaataja kontrollis kaera, suhkrumaisi ja porgandi soovitusi USNO faasihetkede järgi ning kinnitas, et puuduva kuufaasi korral jääb külviaken nähtavale. Kõik 20 automaattesti, TypeScripti tüübikontroll, `git diff --check -- aiandus` ja Expo veebieksport läbisid. Brauseri kasutajateekonda ning Androidi ja iOS-i seadmetel muudatust ei katsetatud.
 
-## 2026-11-21
-
-- Kinnitasin iseseisvaks projektiks Kuukülvi ja panin kirja olemasoleva prototüübi seisu. Kalendris on kuue kultuuri külviaknad, kuufaasid ja põhjendatud külvisoovitused. Prototüübis on külviplaanid, külvipäevik, kohalik ilmaprognoos, hooldusjuhised ja telefoni meeldetuletuste loogika.
-- Lisasin faili `AGENTS.md` automaatse tegevuslogi nõude. Sidusin logi `README.md`-ga ning kirjutasin kolm katsetussammu 26.11.2026 ülevaatuseks.
-- `npm run typecheck` läbis tüübikontrolli. `npm test` läbis kõik kaheksa testi, mis hõlmavad kalendrit, kuufaase, hooldussoovitusi, asulaotsingut ja ilmaprognoosi. `npm exec -- expo export --platform web` lõi veebijärgu kausta `dist`.
-- Androidi ja iOS-i seadmekatsed on veel tegemata. Telefonis vajavad kontrolli meeldetuletuse lubamine, muutmine ja tühistamine ning päeviku kasutamine lennurežiimis.
-
 ## 2026-11-24
 
 - Lisasin faili `src/data/extraCrops.ts` 11 allikaviidetega akent kaalika, valge peakapsa, porgandi, sibula, tippsibula, tilli, spinati ja söögipeedi jaoks. Olemasolev porgandi avamaakülvi kirje säilis. Uuendasin `README.md` funktsioonide loetelu.
-- Sõltumatu ülevaataja kontrollis 10 esimest uut kirjet ning leidis, et algne kasvuhooneporgandi allikas soovitas maid. Sidusin aprilli ligikaudse akna Räpina Aianduskooli õpetaja aprillikuises intervjuus antud soovitusega. Täpsustasin peakapsa aknaid ja lisanud söögipeedi Põllumajandusministeeriumi kasvatusjuhendi põhjal.
+- Sõltumatu ülevaataja kontrollis 10 esimest uut kirjet ning leidis, et algne kasvuhooneporgandi allikas soovitas maid. Sidusin aprilli ligikaudse akna Räpina Aianduskooli õpetaja aprillikuises intervjuus antud soovitusega. Täpsustasin peakapsa aknaid ja lisasin söögipeedi Põllumajandusministeeriumi kasvatusjuhendi põhjal.
 - Kõik 18 automaattesti ja TypeScripti tüübikontroll läbisid. Täiendav Node'i kontroll läbis kõigi 30 kalendrikirje ID-de, kuupäevapiiride, valikusiltide ja viidete vormingu kontrolli. Seadmekatseid ei tehtud.
 
 - Delegeerisin kasvuhoone külvi ja istutamise ning Eesti põllukultuuride külvi ja ettekasvatuse laienduse. `kulviandmete_spetsialist` kontrollis kasvatusaegu ja lisas faili `src/data/extraCrops.ts` 13 allikaviidetega kasvatusakent. `rakenduse_arendaja` ühendab andmed kalendri, plaanide ja päevikuga. Sõltumatu kontrolli võttis `kvaliteedi_ulevaataja`.
@@ -41,3 +57,11 @@
 - Tõstsin külviaja ja selle seisu kalendri ülaossa, sidusin pärimussoovitused Eesti tänase kuupäevaga ja lisasin järgmise aasta otsetee ning soovitatud päevade loendi. Päeva detaili sulgemisel taastab rakendus fookuse selle avanud nupul või real. Muutsin faile `App.tsx`, `src/calendar.ts` ja `tests/calendar.test.mts`. Tüübikontroll ja `git diff --check` läbisid. Kõik 11 kalendritesti läbisid. Kogu testikomplektis läbis 16 testist 15. Hooldusjuhiste test ebaõnnestus kirje `redis-kasvuhoone` juures. VoiceOveri ja TalkBacki fookus vajab seadmekatset.
 - Tegin `App.tsx` päevakaardi kompaktsemaks. Põhjendus, kuufaasi kellaaeg ja allikad ning külvi- või istutusnõuanded avanevad eraldi jaotistes. Osalise kuufaasiandmete katvuse korral saab kuupäevavahemikud eraldi avada. Tüübikontroll, `git diff --check` ja 11 kalendritesti läbisid. Kogu testikomplektis läbis 15 testi 16-st. Hooldusjuhiste test ebaõnnestus endiselt kultuuril `redis-kasvuhoone`. Mobiilseadmel vaadet ei katsetanud.
 - Asendasin failis `App.tsx` Täna vaate pealkirja „Aiapäev“ eestikeelse tänase kuupäevaga ja eemaldasin sama kuupäeva korduse pealkirja alt. Tüübikontroll ja `git diff --check` läbisid.
+
+## 2026-11-21
+
+- Kinnitasin iseseisvaks projektiks Kuukülvi ja panin kirja olemasoleva prototüübi seisu. Kalendris on kuue kultuuri külviaknad, kuufaasid ja põhjendatud külvisoovitused. Prototüübis on külviplaanid, külvipäevik, kohalik ilmaprognoos, hooldusjuhised ja telefoni meeldetuletuste loogika.
+- Lisasin faili `AGENTS.md` automaatse tegevuslogi nõude. Sidusin logi `README.md`-ga ning kirjutasin kolm katsetussammu 26.11.2026 ülevaatuseks.
+- `npm run typecheck` läbis tüübikontrolli. `npm test` läbis kõik kaheksa testi, mis hõlmavad kalendrit, kuufaase, hooldussoovitusi, asulaotsingut ja ilmaprognoosi. `npm exec -- expo export --platform web` lõi veebijärgu kausta `dist`.
+- Androidi ja iOS-i seadmekatsed on veel tegemata. Telefonis vajavad kontrolli meeldetuletuse lubamine, muutmine ja tühistamine ning päeviku kasutamine lennurežiimis.
+- Avaldasin prototüübi ja ülevaatuse materjalid VIKK-i GitHubi hoidlas. Kontrollisin, et projekti juhend ja logi on GitHubis loetavad. Projekti link on Kriiti lisamiseks valmis.

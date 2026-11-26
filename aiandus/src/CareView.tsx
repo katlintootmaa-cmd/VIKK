@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { addDays, CROPS, cropChoice, formatDay, validDay, type Crop, type Day } from './calendar';
+import { addDays, cropChoice, formatDay, parseDayInput, type Crop, type Day } from './calendar';
 import { CARE, CARE_RESEARCH, CARE_TASKS, CARE_TRADITION, TOMATO_TOPPING, careMoonDays, nextFeedingRange, type CareTask } from './care';
 import { Button, Choice, IconButton, Source } from './components';
 import { color, s } from './theme';
 
-export function CareView({ crop, setCrop, day, today, selectDay, openCalendar }: {
-  crop: Crop; setCrop: (crop: Crop) => void; day: Day; today: Day; selectDay: (day: Day) => void; openCalendar: () => void;
+export function CareView({ crop, crops, setCrop, day, today, selectDay, openCalendar }: {
+  crop: Crop; crops: Crop[]; setCrop: (crop: Crop) => void; day: Day; today: Day; selectDay: (day: Day) => void; openCalendar: () => void;
 }) {
   return <>
     <Text accessibilityRole="header" style={s.heading}>Taimehooldus</Text>
-    <Choice value={crop.id} options={CROPS.map(cropChoice)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
+    <Choice value={crop.id} options={crops.map(cropChoice)} onChange={(id) => setCrop(crops.find((item) => item.id === id) ?? crop)} />
     <CareGuide key={crop.id} crop={crop} day={day} today={today} selectDay={selectDay} openCalendar={openCalendar} />
   </>;
 }
@@ -23,7 +23,8 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
   const [task, setTask] = useState<CareTask>(careId === 'tomat' ? 'topping' : crop.method === 'greenhouse-plant' ? 'transplanting' : 'thinning');
   const [lastFed, setLastFed] = useState('');
   const guide = CARE[careId];
-  const range = nextFeedingRange(careId, lastFed);
+  const feedingDay = parseDayInput(lastFed);
+  const range = feedingDay && nextFeedingRange(careId, feedingDay);
   const taskOptions = (Object.keys(CARE_TASKS) as CareTask[]).filter((item) => item !== 'topping' || careId === 'tomat');
   const moonDays = careMoonDays(task, day);
 
@@ -31,7 +32,8 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
     {(greenhouse || !guide) && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>{greenhouse ? 'Kasvuhoonetööd' : 'Kasvatusjuhis'}</Text>
       <Text style={s.body}>{crop.advice}</Text>
-      <Source title="Kasvatusjuhis" url={crop.source} />
+      {crop.source && <Source title="Kasvatusjuhis" url={crop.source} />}
+      {!guide && <Text style={s.small}>Istutuse kuupäeva järgi arvutatud hooldustööd näed vaates „Aed“.</Text>}
     </View>}
     {guide && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>Väetamine kasvufaasi järgi</Text>
@@ -48,11 +50,12 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
       <View style={s.stack}>
         <Text style={s.strong}>Viimase väetamise kuupäev</Text>
         <TextInput accessibilityLabel="Viimase väetamise kuupäev" style={s.field} value={lastFed} onChangeText={setLastFed}
-          placeholder="AAAA-KK-PP" placeholderTextColor={color.muted} maxLength={10} autoCapitalize="none" />
+          placeholder="PP-KK-AAAA või PP-KK-AA" placeholderTextColor={color.muted} maxLength={10} autoCapitalize="none" />
       </View>
       {range ? <Text accessibilityLiveRegion="polite" style={s.strong}>
         Järgmine võimalik väetamine · {formatDay(range.start)} – {formatDay(range.end)}
-      </Text> : lastFed.length === 10 && !validDay(lastFed) && <Text accessibilityLiveRegion="polite" style={s.error}>Sisesta kehtiv kuupäev.</Text>}
+      </Text> : (lastFed.length === 8 || lastFed.length === 10) && !feedingDay &&
+        <Text accessibilityLiveRegion="polite" style={s.error}>Sisesta kehtiv kuupäev kujul PP-KK-AAAA või PP-KK-AA.</Text>}
     </View>}
     {careId === 'tomat' && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>{TOMATO_TOPPING.title}</Text>
@@ -71,7 +74,7 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
         <IconButton label="Järgmine päev" icon="chevron-forward" onPress={() => selectDay(addDays(day, 1))} />
       </View>
       {moonDays.map(({ day: date, period, matches }) => <View key={date} style={s.between}>
-        <Text style={s.strong}>{formatDay(date, { day: 'numeric', month: 'short' })}</Text>
+        <Text style={s.strong}>{formatDay(date)}</Text>
         <Text style={matches ? s.badge : s.small}>{period === undefined ? 'Kuufaasi andmed puuduvad' :
           `${period === 'waxing' ? 'Kasvav kuu' : 'Kahanev kuu'}${matches ? ' · sobib pärimuse järgi' : ''}`}</Text>
       </View>)}
