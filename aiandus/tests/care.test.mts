@@ -3,10 +3,14 @@ import test from 'node:test';
 import { CARE, careMoonDays, nextFeedingRange } from '../src/care.ts';
 import { CROPS } from '../src/calendar.ts';
 
-test('all listed crops have sourced guides from sowing to harvest', () => {
-  for (const crop of CROPS) {
-    assert.ok(CARE[crop.id]?.stages.length >= 3, crop.id);
-    assert.ok(CARE[crop.id]?.sources.length, crop.id);
+test('all detailed guides are sourced and linked from their crop variants', () => {
+  for (const [id, guide] of Object.entries(CARE)) {
+    assert.ok(CROPS.some((crop) => crop.id === id), id);
+    assert.ok(guide.stages.length >= 3, id);
+    assert.ok(guide.sources.length, id);
+  }
+  for (const crop of CROPS.filter(({ careId }) => careId !== undefined)) {
+    assert.ok(crop.careId && CARE[crop.careId], crop.id);
   }
 });
 

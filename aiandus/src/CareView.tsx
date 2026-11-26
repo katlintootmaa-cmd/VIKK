@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { addDays, CROPS, formatDay, validDay, type Crop, type Day } from './calendar';
+import { addDays, CROPS, cropChoice, formatDay, validDay, type Crop, type Day } from './calendar';
 import { CARE, CARE_RESEARCH, CARE_TASKS, CARE_TRADITION, TOMATO_TOPPING, careMoonDays, nextFeedingRange, type CareTask } from './care';
 import { Button, Choice, IconButton, Source } from './components';
 import { color, s } from './theme';
@@ -10,7 +10,7 @@ export function CareView({ crop, setCrop, day, today, selectDay, openCalendar }:
 }) {
   return <>
     <Text accessibilityRole="header" style={s.heading}>Taimehooldus</Text>
-    <Choice value={crop.id} options={CROPS.map(({ id, name }) => [id, name] as const)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
+    <Choice value={crop.id} options={CROPS.map(cropChoice)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
     <CareGuide key={crop.id} crop={crop} day={day} today={today} selectDay={selectDay} openCalendar={openCalendar} />
   </>;
 }
@@ -18,15 +18,22 @@ export function CareView({ crop, setCrop, day, today, selectDay, openCalendar }:
 function CareGuide({ crop, day, today, selectDay, openCalendar }: {
   crop: Crop; day: Day; today: Day; selectDay: (day: Day) => void; openCalendar: () => void;
 }) {
-  const [task, setTask] = useState<CareTask>(crop.id === 'tomat' ? 'topping' : 'thinning');
+  const careId = crop.careId ?? crop.id;
+  const greenhouse = crop.method === 'greenhouse-sow' || crop.method === 'greenhouse-plant';
+  const [task, setTask] = useState<CareTask>(careId === 'tomat' ? 'topping' : crop.method === 'greenhouse-plant' ? 'transplanting' : 'thinning');
   const [lastFed, setLastFed] = useState('');
-  const guide = CARE[crop.id];
-  const range = nextFeedingRange(crop.id, lastFed);
-  const taskOptions = (Object.keys(CARE_TASKS) as CareTask[]).filter((item) => item !== 'topping' || crop.id === 'tomat');
+  const guide = CARE[careId];
+  const range = nextFeedingRange(careId, lastFed);
+  const taskOptions = (Object.keys(CARE_TASKS) as CareTask[]).filter((item) => item !== 'topping' || careId === 'tomat');
   const moonDays = careMoonDays(task, day);
 
   return <>
-    <View style={s.card}>
+    {(greenhouse || !guide) && <View style={s.card}>
+      <Text accessibilityRole="header" style={s.subheading}>{greenhouse ? 'Kasvuhoonetööd' : 'Kasvatusjuhis'}</Text>
+      <Text style={s.body}>{crop.advice}</Text>
+      <Source title="Kasvatusjuhis" url={crop.source} />
+    </View>}
+    {guide && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>Väetamine kasvufaasi järgi</Text>
       {guide.stages.map(({ title, advice }) => <View key={title} style={s.stack}>
         <Text style={s.strong}>{title}</Text>
@@ -34,8 +41,8 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
       </View>)}
       <Text style={s.small}>Järgi väetise pakendil toodud kogust ja kasutussagedust.</Text>
       <View style={s.wrap}>{guide.sources.map(({ title, url }) => <Source key={url} title={title} url={url} />)}</View>
-    </View>
-    {guide.containerInterval && <View style={s.card}>
+    </View>}
+    {guide?.containerInterval && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>Millal potitaime uuesti väetada?</Text>
       <Text style={s.small}>Arvutus lähtub {guide.containerInterval.join('–')}-päevasest vahest juba väetatavale potitaimele.</Text>
       <View style={s.stack}>
@@ -47,7 +54,7 @@ function CareGuide({ crop, day, today, selectDay, openCalendar }: {
         Järgmine võimalik väetamine · {formatDay(range.start)} – {formatDay(range.end)}
       </Text> : lastFed.length === 10 && !validDay(lastFed) && <Text accessibilityLiveRegion="polite" style={s.error}>Sisesta kehtiv kuupäev.</Text>}
     </View>}
-    {crop.id === 'tomat' && <View style={s.card}>
+    {careId === 'tomat' && <View style={s.card}>
       <Text accessibilityRole="header" style={s.subheading}>{TOMATO_TOPPING.title}</Text>
       <Text style={s.body}>{TOMATO_TOPPING.advice}</Text>
       <Source title="RHS-i juhis tomati kujundamiseks" url="https://www.rhs.org.uk/vegetables/tomatoes/grow-your-own" />

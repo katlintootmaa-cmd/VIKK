@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Linking, Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
-import { CROPS, METHOD, formatDay, nextWindow, validDay, type Crop, type Day } from './calendar';
+import { CROPS, METHOD, cropChoice, formatDay, isPlanting, nextWindow, validDay, type Crop, type Day } from './calendar';
 import type { Entry } from './journal';
 import { remindersAvailable } from './reminders';
 import { color, s } from './theme';
@@ -143,7 +143,7 @@ export function EntryEditor({ request, today, close, save }: {
       return;
     }
     if (!isPlan && actualDay > today) {
-      setError('Tegelik külvikuupäev saab olla täna või varem.');
+      setError('Tegelik kuupäev saab olla täna või varem.');
       return;
     }
     setError('');
@@ -160,19 +160,21 @@ export function EntryEditor({ request, today, close, save }: {
     }
   }
 
-  return <Sheet title={isPlan ? 'Planeeri külv' : 'Märgi külvatuks'} close={close}>
-    <Choice value={crop.id} options={CROPS.map(({ id, name }) => [id, name] as const)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
+  const planting = isPlanting(crop.method);
+  const dayLabel = isPlan ? 'Kuupäev või perioodi algus' : 'Tegelik kuupäev';
+  return <Sheet title={isPlan ? 'Planeeri töö' : planting ? 'Märgi istutatuks' : 'Märgi külvatuks'} close={close}>
+    <Choice value={crop.id} options={CROPS.map(cropChoice)} onChange={(id) => setCrop(CROPS.find((item) => item.id === id) ?? crop)} />
     <Text style={s.small}>{METHOD[crop.method]}</Text>
     <View style={s.stack}>
       <Text style={s.strong}>Sort (valikuline)</Text>
       <TextInput accessibilityLabel="Sort" style={s.field} value={variety} onChangeText={setVariety}
         placeholder="Sordi nimi" placeholderTextColor={color.muted} maxLength={100} />
     </View>
-    {isPlan && <Button icon="calendar-outline" title={`Vali külviperiood · ${formatDay(window.start)} – ${formatDay(window.end)}`}
+    {isPlan && <Button icon="calendar-outline" title={`Vali ${planting ? 'istutusperiood' : 'külviperiood'} · ${formatDay(window.start)} – ${formatDay(window.end)}`}
       onPress={() => { setDay(window.start); setEnd(window.end); }} />}
     <View style={s.stack}>
-      <Text style={s.strong}>{isPlan ? 'Külvipäev või perioodi algus' : 'Tegelik külvikuupäev'}</Text>
-      <TextInput accessibilityLabel={isPlan ? 'Külvipäev või perioodi algus' : 'Tegelik külvikuupäev'} style={s.field} value={day}
+      <Text style={s.strong}>{dayLabel}</Text>
+      <TextInput accessibilityLabel={dayLabel} style={s.field} value={day}
         onChangeText={setDay} placeholder="AAAA-KK-PP" placeholderTextColor={color.muted} autoCapitalize="none" maxLength={10} />
     </View>
     {isPlan && <View style={s.stack}>
@@ -183,7 +185,7 @@ export function EntryEditor({ request, today, close, save }: {
     <View style={s.stack}>
       <Text style={s.strong}>Täpsustused (valikuline)</Text>
       <TextInput accessibilityLabel="Täpsustused" style={s.field} value={note} onChangeText={setNote}
-        placeholder="Näiteks seemnete arv või külvikoht" placeholderTextColor={color.muted} multiline maxLength={400} />
+        placeholder="Näiteks taimede arv või kasvukoht" placeholderTextColor={color.muted} multiline maxLength={400} />
     </View>
     {isPlan && remindersAvailable && <View style={s.between}>
       <Text style={[s.body, s.grow]}>Meeldetuletus kell 9 Eesti aja järgi</Text>

@@ -1,11 +1,21 @@
 import phases from './data/moon-phases.json' with { type: 'json' };
+import { EXTRA_CROPS } from './data/extraCrops.ts';
 
 export const TIME_ZONE = 'Europe/Tallinn';
 export type Day = string;
-export type Method = 'outdoor' | 'indoors';
 type LunarPeriod = 'waxing' | 'waning';
 
-export const METHOD = { outdoor: 'Avamaale külv', indoors: 'Ettekasvatus' } as const;
+export const METHOD = {
+  outdoor: 'Avamaale külv',
+  indoors: 'Ettekasvatus',
+  'greenhouse-sow': 'Kasvuhoonesse külv',
+  'greenhouse-plant': 'Kasvuhoonesse istutamine',
+  'outdoor-plant': 'Avamaale istutamine',
+} as const;
+export type Method = keyof typeof METHOD;
+type PlantingMethod = 'greenhouse-plant' | 'outdoor-plant';
+export const isPlanting = (method: Method): method is PlantingMethod => method === 'greenhouse-plant' || method === 'outdoor-plant';
+export const LUNAR_PERIOD_NAME = { waxing: 'kasvav kuu', waning: 'kahanev kuu' } as const;
 export const PHASE_NAMES: Record<string, string> = {
   'New Moon': 'Noorkuu', 'First Quarter': 'Esimene veerand',
   'Full Moon': 'Täiskuu', 'Last Quarter': 'Viimane veerand',
@@ -14,9 +24,13 @@ export const USNO = 'https://aa.usno.navy.mil/data/MoonPhases';
 export const TRADITION = 'https://www.almanac.com/planting-by-the-moon';
 
 export type Crop = {
-  id: string; name: string; icon: string; method: Method; lunar: LunarPeriod;
+  id: string; name: string; icon: string;
+  category?: 'field'; careId?: string;
   start: string; end: string; advice: string; source: string;
-};
+} & (
+  | { method: Exclude<Method, PlantingMethod>; lunar: LunarPeriod }
+  | { method: PlantingMethod; lunar?: LunarPeriod }
+);
 
 const gardest = 'https://gardest.ee/wp-content/uploads/2026/01/Gardesti-kulvikalender-Koogiviljad.pdf';
 const growing = 'https://kasvatamine.ee/eesti-koogiviljade-kulvikalender-praktiline-juhend-avamaale-ja-kasvuhoonesse/';
@@ -29,7 +43,14 @@ export const CROPS: Crop[] = [
   { id: 'salat', name: 'Aedsalat', icon: '🥬', method: 'outdoor', lunar: 'waxing', start: '04-01', end: '05-31', advice: 'Aedsalat sobib kevadiseks külviks, kui muld on haritav.', source: growing },
   { id: 'tomat', name: 'Tomat', icon: '🍅', method: 'indoors', lunar: 'waxing', start: '03-01', end: '03-31', advice: 'Alusta soojas ja valgusküllases kohas umbes 6–8 nädalat enne istutamist.', source: growing },
   { id: 'kurk', name: 'Kurk', icon: '🥒', method: 'indoors', lunar: 'waxing', start: '04-21', end: '05-31', advice: 'Külva potti soojas kohas. Välja istutamisel arvesta öökülma ja mulla soojenemisega.', source: growing },
+  ...EXTRA_CROPS,
 ];
+
+export const cropChoice = ({ id, name, method }: Crop) => [id, `${name} · ${METHOD[method]}`] as const;
+
+export function withSowingPeriod(crop: Crop, period?: LunarPeriod): Crop {
+  return period === undefined || isPlanting(crop.method) ? crop : { ...crop, lunar: period };
+}
 
 const dateFormatter = new Intl.DateTimeFormat('sv-SE', {
   timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit',
@@ -100,23 +121,71 @@ export function sowingWindow(crop: Crop, year: string) {
   return { start: `${year}-${crop.start}`, end: `${year}-${crop.end}` };
 }
 
+export function sowingWindowCoverage(crop: Crop, year: string) {
+  const { start, end } = sowingWindow(crop, year);
+  const coveredRanges: { start: Day; end: Day }[] = [];
+  let range: (typeof coveredRanges)[number] | undefined;
+  let hasMissingData = false;
+
+  for (let day = start; day <= end; day = addDays(day, 1)) {
+    if (lunarPeriod(day) === undefined) {
+      hasMissingData = true;
+      range = undefined;
+    } else if (range) {
+      range.end = day;
+    } else {
+      range = { start: day, end: day };
+      coveredRanges.push(range);
+    }
+  }
+
+  const status = !hasMissingData ? 'complete' : coveredRanges.length ? 'partial' : 'missing';
+  return { status, coveredRanges };
+}
+
 export function inSeason(crop: Crop, day: Day): boolean {
   return day.slice(5) >= crop.start && day.slice(5) <= crop.end;
 }
 
 export function recommended(crop: Crop, day: Day): boolean {
-  return inSeason(crop, day) && lunarPeriod(day) === crop.lunar;
+  return crop.lunar !== undefined && inSeason(crop, day) && lunarPeriod(day) === crop.lunar;
 }
 
-export function nextSuggestedDay(crop: Crop, from: Day): Day | undefined {
+type SowingSuggestion =
+  | { status: 'found'; day: Day; earlierDataMissing: boolean }
+  | { status: 'no-match' | 'missing-data' | 'season-ended' | 'no-rule' };
+
+export function nextSuggestedDay(crop: Crop, from: Day): SowingSuggestion {
   const { start, end } = sowingWindow(crop, from.slice(0, 4));
+  if (from > end) return { status: 'season-ended' };
+  if (!crop.lunar) return { status: 'no-rule' };
+
+  let missingData = false;
   for (let day = from > start ? from : start; day <= end; day = addDays(day, 1)) {
-    if (recommended(crop, day)) return day;
+    const period = lunarPeriod(day);
+    if (period === crop.lunar) return { status: 'found', day, earlierDataMissing: missingData };
+    if (period === undefined) missingData = true;
   }
+  return { status: missingData ? 'missing-data' : 'no-match' };
 }
 
 export function nextWindow(crop: Crop, from: Day) {
   const year = from.slice(0, 4);
   const current = sowingWindow(crop, year);
   return current.end >= from ? current : sowingWindow(crop, String(Number(year) + 1));
+}
+
+export function calendarSeason(crop: Crop, year: string, today: Day) {
+  const window = sowingWindow(crop, year);
+  const start = today > window.start ? today : window.start;
+  const status = today > window.end ? 'ended' : today < window.start ? 'upcoming' : 'active';
+  const days: Day[] = [];
+  for (let day = start; day <= window.end; day = addDays(day, 1)) {
+    if (recommended(crop, day)) days.push(day);
+  }
+  return {
+    window, status, days,
+    suggestion: status === 'ended' ? { status: 'season-ended' as const } : nextSuggestedDay(crop, start),
+    followingWindow: sowingWindow(crop, String(Number(year) + 1)),
+  };
 }

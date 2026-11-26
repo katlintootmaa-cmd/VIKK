@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { CROPS, METHOD, tallinnTime } from './calendar';
+import { CROPS, METHOD, isPlanting, tallinnTime } from './calendar';
 import type { Entry } from './journal';
 
 export const remindersAvailable = true;
@@ -51,7 +51,9 @@ export async function syncReminders(entries: Entry[]): Promise<void> {
     await Notifications.scheduleNotificationAsync({
       identifier,
       content: {
-        title: entry.end ? `${crop.name} · külviperiood algab` : `${crop.name} · külvipäev`,
+        title: `${crop.name} · ${isPlanting(crop.method)
+          ? (entry.end ? 'istutusperiood algab' : 'istutuspäev')
+          : (entry.end ? 'külviperiood algab' : 'külvipäev')}`,
         body: METHOD[crop.method],
         data: { at: date.getTime(), crop: crop.id },
       },

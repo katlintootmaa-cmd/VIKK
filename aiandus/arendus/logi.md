@@ -1,0 +1,43 @@
+# Kuukülvi arenduslogi
+
+## 2026-11-25
+
+- Delegeerisin kuufaaside reegli täpsustamise külviandmete spetsialistile ja rakendamise arendajale. Ülesanne hõlmab avamaa ja kasvuhoone otsekülvi, ettekasvatust ning põllukultuure. Kasvatusaken piirab kuupäevi ja pärimus jääb selgitavaks taustaks.
+- Arendaja lisas kõigile külvi- ja ettekasvatuskirjetele kuufaasi vaikevaliku ning võimaluse valida kasvav või kahanev kuu üheks äpi avamiskorraks. Kalender ja vaade Täna lähtuvad samast valikust. Pärimus selgitab vaikevalikut eraldi. Muudatused failides `App.tsx`, `src/calendar.ts`, `src/data/extraCrops.ts`, `tests/calendar.test.mts` ja `README.md`.
+- Ülevaataja kontrollis kaera, suhkrumaisi ja porgandi soovitusi USNO faasihetkede järgi ning kinnitas, et puuduva kuufaasi korral jääb külviaken nähtavale. Kõik 20 automaattesti, TypeScripti tüübikontroll, `git diff --check -- aiandus` ja Expo veebieksport läbisid. Brauseri kasutajateekonda ning Androidi ja iOS-i seadmetel muudatust ei katsetatud.
+
+## 2026-11-21
+
+- Kinnitasin iseseisvaks projektiks Kuukülvi ja panin kirja olemasoleva prototüübi seisu. Kalendris on kuue kultuuri külviaknad, kuufaasid ja põhjendatud külvisoovitused. Prototüübis on külviplaanid, külvipäevik, kohalik ilmaprognoos, hooldusjuhised ja telefoni meeldetuletuste loogika.
+- Lisasin faili `AGENTS.md` automaatse tegevuslogi nõude. Sidusin logi `README.md`-ga ning kirjutasin kolm katsetussammu 26.11.2026 ülevaatuseks.
+- `npm run typecheck` läbis tüübikontrolli. `npm test` läbis kõik kaheksa testi, mis hõlmavad kalendrit, kuufaase, hooldussoovitusi, asulaotsingut ja ilmaprognoosi. `npm exec -- expo export --platform web` lõi veebijärgu kausta `dist`.
+- Androidi ja iOS-i seadmekatsed on veel tegemata. Telefonis vajavad kontrolli meeldetuletuse lubamine, muutmine ja tühistamine ning päeviku kasutamine lennurežiimis.
+
+## 2026-11-24
+
+- Lisasin faili `src/data/extraCrops.ts` 11 allikaviidetega akent kaalika, valge peakapsa, porgandi, sibula, tippsibula, tilli, spinati ja söögipeedi jaoks. Olemasolev porgandi avamaakülvi kirje säilis. Uuendasin `README.md` funktsioonide loetelu.
+- Sõltumatu ülevaataja kontrollis 10 esimest uut kirjet ning leidis, et algne kasvuhooneporgandi allikas soovitas maid. Sidusin aprilli ligikaudse akna Räpina Aianduskooli õpetaja aprillikuises intervjuus antud soovitusega. Täpsustasin peakapsa aknaid ja lisanud söögipeedi Põllumajandusministeeriumi kasvatusjuhendi põhjal.
+- Kõik 18 automaattesti ja TypeScripti tüübikontroll läbisid. Täiendav Node'i kontroll läbis kõigi 30 kalendrikirje ID-de, kuupäevapiiride, valikusiltide ja viidete vormingu kontrolli. Seadmekatseid ei tehtud.
+
+- Delegeerisin kasvuhoone külvi ja istutamise ning Eesti põllukultuuride külvi ja ettekasvatuse laienduse. `kulviandmete_spetsialist` kontrollis kasvatusaegu ja lisas faili `src/data/extraCrops.ts` 13 allikaviidetega kasvatusakent. `rakenduse_arendaja` ühendab andmed kalendri, plaanide ja päevikuga. Sõltumatu kontrolli võttis `kvaliteedi_ulevaataja`.
+- Enne uute akende lisamist läbisid kõik 14 olemasolevat automaattesti. Varane tüübikontroll leidis `App.tsx`-is viite- ja tüübi vead, mis anti arendajale lahendada koos kalendrimuudatusega.
+- Arendaja lisas kasvuhoone külvi ja istutamise ning põllukultuuride filtrid vaadetesse Täna ja Kalender. Plaanis, päevikus ja meeldetuletustes kasutatakse valitud töö nimetust. Hooldusvaates lisandusid kasvuhoone tööd. Muudatused failides `App.tsx`, `src/calendar.ts`, `src/CareView.tsx`, `src/components.tsx`, `src/reminders.native.ts`, testides ja `README.md`-s.
+- Sõltumatu ülevaataja võrdles uusi aknaid viidatud kasvatusjuhenditega ja kontrollis 19 kalendrikirje kaasavaid kuupäevapiire, järgmise aasta akna leidmist, kuufaasiandmete puudumist ja Eesti suveajale üleminekuid. Veebi kasutajateekonna katse peatus brauseritööriista aadressikontrollil. Androidi ja iOS-i seadmekatseid ei tehtud.
+- Lõppseisus läbisid kõik 18 automaattesti, TypeScripti tüübikontroll ja `git diff --check -- aiandus`. Expo veebieksport lõi järgu kausta `dist`.
+
+- Kirjutasin Kuukülvi README ümber isikliku projekti tutvustuseks. Säilitasin käivitusjuhised ja tehnilised märkmed. Tõstsin arenduslogi kausta `arendus`, lõin blogipostituste jaoks alamkausta `arendus/blogi` ning uuendasin viiteid failides `README.md` ja `AGENTS.md`.
+- Kontrollisin, et viidatud logi ja blogi avaleht on olemas. `git diff --check` läbis kontrolli.
+- Tõstsin README algusesse projekti eesmärgi ja sihtrühma, millele järgnevad äpi võimalused ja käivitusjuhised. Kontrollisin jaotiste järjekorda ja käivitasin edukalt `git diff --check`.
+- Võrdlesin logi Git-ajalooga. Esimene commit sisaldab juba tervet prototüüpi, seega varasemate sammude kuupäevi sealt ei näe. Lisasin kausta `arendus/blogi` kolm tagasivaatavat postitust külviakendest ja kuufaasidest, külviplaanist ja päevikust ning ilmast ja taimehooldusest. Kontrollisin blogi avalehe viiteid ja käivitasin edukalt `git diff --check`.
+- Täiendasin README projektiplaani seitsme funktsiooni, teostusetappide ja kontrollitavate valmisoleku kriteeriumidega. Säilitasin käivitusjuhised, arendusviited ja tehnilised märkmed. Kontrollisin jaotisi, funktsioonide arvu ja kohalikke viiteid. `git diff --check -- aiandus/README.md` läbis kontrolli.
+- Nimetasin neli Codexi agenti nende rollide järgi ümber, täpsustasin nende ülesandeid ja oodatavaid tulemusi ning lisasin rollide ülevaate faili `AGENTS.md`. Kontrollisin nelja TOML-faili süntaksit, failinimede vastavust agendinimedele ja juhendi viiteid.
+- Sõnastasin README ümber arendaja loomulikus kõneviisis. Säilitasin projektiplaani, seitse funktsiooni, käivitusjuhised, tehnilised detailid ja viited. Kontrollisin funktsioonide arvu, viidete säilimist ja käivitasin edukalt `git diff --check`.
+- Kontrollisin Kuukülvi README, arendusjuhiste ja blogi Markdowni linke. Kõik 13 kohalikku viidet osutasid olemasolevatele failidele ja kõik kaheksa eri välislinki avasid viidatud allika. Teadusartikli DOI suunas õigesti kirjastaja lehele.
+
+- Delegeerisin külvisoovituste ja olemasolevate testide ülevaatuse agendile `kvaliteedi_ulevaataja`. Ta leidis puuduliku päevapõhjenduse kuufaasi vahetumise päeval, külviakna kuufaasiandmete katvuse eraldi oleku puudumise ja lüngad automaattestides. Kõik kaheksa olemasolevat testi ja tüübikontroll läbisid. Täiendavad Node'i kontrollid läbisid USNO faasihetkede, ajavööndi, külviakende ja järgmise soovituse näited. Seadme- ja võrguühenduseta katsed jäid tegemata.
+- Agent `rakenduse_arendaja` täiendas päevavaates külvisoovituse põhjendust, lisas faasihetke Eesti kellaaja ja märkis külviakna ligikaudseks. Järgmise soovituse otsing eristab puuduvat andmekatet ja sobiva päeva puudumist. Kui varasem andmelünk eelneb kinnitatud vastele, kuvab äpp esimese teadaoleva sobiva päeva. Muudatused failides `App.tsx`, `src/calendar.ts` ja `tests/calendar.test.mts`.
+- Agent `kvaliteedi_ulevaataja` kontrollis muudatused sõltumatult ja kinnitas osalise andmekatte piirjuhu paranduse. Kõik 13 testi, TypeScripti tüübikontroll ja `git diff --check` läbisid. Androidi ja iOS-i seadmekatseid ei tehtud.
+- Täiendasin päevavaates külvisoovituse põhjendust ja lisasin kogu külviakna kuufaasiandmete katvuse. Osalise katvuse korral kuvatakse kaetud päevade vahemikud ning täieliku andmepuuduse korral jääb külviaken nähtavale. Lisasin katvuse regressioonitesti. Muudatused failides `App.tsx`, `src/calendar.ts` ja `tests/calendar.test.mts`. Kõik 14 testi, tüübikontroll ja `git diff --check` läbisid. Mobiilseadmel vaadet ei katsetanud.
+- Tõstsin külviaja ja selle seisu kalendri ülaossa, sidusin pärimussoovitused Eesti tänase kuupäevaga ja lisasin järgmise aasta otsetee ning soovitatud päevade loendi. Päeva detaili sulgemisel taastab rakendus fookuse selle avanud nupul või real. Muutsin faile `App.tsx`, `src/calendar.ts` ja `tests/calendar.test.mts`. Tüübikontroll ja `git diff --check` läbisid. Kõik 11 kalendritesti läbisid. Kogu testikomplektis läbis 16 testist 15. Hooldusjuhiste test ebaõnnestus kirje `redis-kasvuhoone` juures. VoiceOveri ja TalkBacki fookus vajab seadmekatset.
+- Tegin `App.tsx` päevakaardi kompaktsemaks. Põhjendus, kuufaasi kellaaeg ja allikad ning külvi- või istutusnõuanded avanevad eraldi jaotistes. Osalise kuufaasiandmete katvuse korral saab kuupäevavahemikud eraldi avada. Tüübikontroll, `git diff --check` ja 11 kalendritesti läbisid. Kogu testikomplektis läbis 15 testi 16-st. Hooldusjuhiste test ebaõnnestus endiselt kultuuril `redis-kasvuhoone`. Mobiilseadmel vaadet ei katsetanud.
+- Asendasin failis `App.tsx` Täna vaate pealkirja „Aiapäev“ eestikeelse tänase kuupäevaga ja eemaldasin sama kuupäeva korduse pealkirja alt. Tüübikontroll ja `git diff --check` läbisid.

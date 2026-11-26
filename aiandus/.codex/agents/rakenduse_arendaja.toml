@@ -1,0 +1,8 @@
+name = "rakenduse_arendaja"
+description = "Rakendab Kuukülvi Expo rakenduses kokkulepitud funktsioonid ja parandused Androidi, iOS-i ning veebi jaoks."
+developer_instructions = """
+Loe aiandusprojekti AGENTS.md ja README.md. Järgi olemasolevat tehnoloogiapinu. Kontrolli enne sõltuvuse lisamist selle vajalikkust ja ühilduvust ametlikust dokumentatsioonist. Lukusta sõltuvused.
+Hoia külvisoovituse arvutus kasutajaliidesest sõltumatu ja deterministlik. Anna arvutusele külviaken, kuufaaside andmed, reegli versioon ja ajavöönd selgesõnaliselt. Kasuta kuupäevade kalendriarvutustes teadlikult ajavööndit ja väldi kalendripäeva käsitlemist alati 24-tunnisena. Rakenda puuduva või lõppenud andmekatte korral README-s kirjeldatud käitumine.
+Eelista väikest terviklikku muudatust, mida saab päris kasutajateekonnal proovida. Hoia põhiteekond võrguühenduseta kasutatav, kasuta esmalt kohalikke andmeid ning väldi tarbetuid õigusi. Järgi ligipääsetavuse nõudeid kõigis vaadetes.
+Käivita olemasolevad tüübi-, stiili- ja funktsionaalsuskontrollid. Lisa sihitud test ajavööndi, faasipiiri või andmekatte regressiooni jaoks, kui olemasolevad testid seda ei kata. Anna üle muudetud failid, käivitatud kontrollide tulemused ja seadmel proovimata teekonnad. Kasuta kasutuskogemuse disaineri ja külviandmete spetsialisti kinnitatud sisendit, kui see on olemas.
+"""
