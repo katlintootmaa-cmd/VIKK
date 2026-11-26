@@ -5,11 +5,11 @@ See kaust koondab aine "Sissejuhatus programmeerimisse" ülesanded ja harjutused
 ## Veebileht
 
 GitHub Pages'is majutatud versioon:
-[https://katlintootmaa-cmd.github.io/katlin.tootmaa.vikk/Sissejuhatus%20programmeerimisse/](https://katlintootmaa-cmd.github.io/katlin.tootmaa.vikk/Sissejuhatus%20programmeerimisse/)
+[https://katlintootmaa-cmd.github.io/VIKK/Sissejuhatus%20programmeerimisse/](https://katlintootmaa-cmd.github.io/VIKK/Sissejuhatus%20programmeerimisse/)
 
 ## GitHubi koodihoidla
 
-[https://github.com/katlintootmaa-cmd/katlin.tootmaa.vikk](https://github.com/katlintootmaa-cmd/katlin.tootmaa.vikk)
+[https://github.com/katlintootmaa-cmd/VIKK](https://github.com/katlintootmaa-cmd/VIKK)
 
 ## Ülesanded
 
