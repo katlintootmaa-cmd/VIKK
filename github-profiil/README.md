@@ -10,20 +10,6 @@ Oma õppeprojektides olen tegelenud SQL päringute, andmete puhastamise, Power B
 
 Minu esimene suund on tarkvaraarendus ning teise suunana huvitab mind andmeanalüütika. Soovin arendada oskusi, millega saab luua toimivaid digilahendusi, korrastada andmeid ja esitada tulemusi kasutajale arusaadavalt.
 
-## Oskused
-
-- HTML ja CSS
-- SQL
-- Python
-- Power BI
-- Excel
-- GitHub
-- Andmete puhastamine
-- Dashboardid
-
-## Lemmik teema portfoolios
-
-DACA portfoolios meeldis mulle eriti andmete visualiseerimine. Visualiseerimise juures kõnetab mind see, kuidas arvudest saab luua selge pildi: dashboardid, graafikud ja lühikesed järeldused aitavad andmeid paremini mõista ning toetavad otsuste tegemist.
 
 ## Minu huvid
 
@@ -32,9 +18,13 @@ DACA portfoolios meeldis mulle eriti andmete visualiseerimine. Visualiseerimise 
 - Aiandus
 - Käsitöö
 
-## Minu portfoolio
+## Projektid
 
-[Minu andmeanalüütiku portfoolios](https://katlintootmaa-cmd.github.io/daca-portfolio/) saad tutvuda minu projektidega ja vaadata, mida olen õppimise käigus teinud.
+- [DACA andmeanalüütiku portfoolio](https://katlintootmaa-cmd.github.io/daca-portfolio/): SQL päringud, andmete puhastamine, Power BI dashboardid ja Python Pandas ([kood](https://github.com/katlintootmaa-cmd/daca-portfolio)).
+- [Kuukülv](https://github.com/katlintootmaa-cmd/VIKK/tree/main/aiandus): Expo ja React Native'iga tehtud külvikalender, mis soovitab kuufaasi järgi külvipäevi Eesti oludes.
+- [AutoZombie](https://github.com/katlintootmaa-cmd/AutoZombie): Pythoni ja Tkinteriga tehtud Windowsi töölauarakendus mängu *Last War: Survival* abiliseks.
+- [Numbrimäng](https://github.com/katlintootmaa-cmd/VIKK/tree/main/Sissejuhatus%20programmeerimisse/numbrimang): terminalis töötav TypeScripti mäng edetabeliga.
+
 
 ## Kontakt
 
