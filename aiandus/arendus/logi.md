@@ -60,8 +60,20 @@ Kohalikus arvutis tehtud tööd pärast 21.11 commit'i. Täpset päeva ei saa Gi
 
 ## 2026-11-21
 
+- Eraldasin külvipäevikus tehtud külvid külviplaanidest. Vaates „Tehtud külvid“ on kirjed kuupäeva järgi, uuemad ees (`App.tsx`, `README.md`).
 - Kinnitasin iseseisvaks projektiks Kuukülvi ja panin kirja olemasoleva prototüübi seisu. Kalendris on kuue kultuuri külviaknad, kuufaasid ja põhjendatud külvisoovitused. Prototüübis on külviplaanid, külvipäevik, kohalik ilmaprognoos, hooldusjuhised ja telefoni meeldetuletuste loogika.
 - Lisasin faili `AGENTS.md` automaatse tegevuslogi nõude. Sidusin logi `README.md`-ga ning kirjutasin kolm katsetussammu 26.11.2026 ülevaatuseks.
 - `npm run typecheck` läbis tüübikontrolli. `npm test` läbis kõik kaheksa testi, mis hõlmavad kalendrit, kuufaase, hooldussoovitusi, asulaotsingut ja ilmaprognoosi. `npm exec -- expo export --platform web` lõi veebijärgu kausta `dist`.
 - Androidi ja iOS-i seadmekatsed on veel tegemata. Telefonis vajavad kontrolli meeldetuletuse lubamine, muutmine ja tühistamine ning päeviku kasutamine lennurežiimis.
 - Avaldasin prototüübi ja ülevaatuse materjalid VIKK-i GitHubi hoidlas. Kontrollisin, et projekti juhend ja logi on GitHubis loetavad. Projekti link on Kriiti lisamiseks valmis.
+
+## 2026-11-19
+
+Taastatud tagantjärele Git-ajaloost. Tööd on tehtud 19.11 kella 17.22 ja 17.45 vahel.
+
+- Kirjutasin Kuukülvi programmeerimisprojekti plaani faili `README.md`. Plaanis olid eesmärk, sihtrühm ja kuus funktsiooni: kultuuri ja külviviisi valik, külviperiood, kuufaasid, järgmine kuufaasi järgi soovitatud külvipäev ning võrguühenduseta kasutus. Esimesse versiooni plaanisin redise, porgandi, herne ja aedsalati.
+- Lisasin arendusjuhised `AGENTS.md` ja neli Codexi agenti: `toode_ja_kasutuskogemus`, `kuukalender_ja_aiandus`, `mobiiliarendus` ja `kvaliteedikontroll`.
+- Täiendasin plaani külvimeeldetuletuste ja külvipäevikuga ning kohaliku ilmaprognoosiga.
+- Ehitasin Expoga esimese mobiiliprototüübi. Selles olid külvikalender, USNO kuufaasid 2025–2031, külviplaanid ja päevik, telefoni meeldetuletused, kohalik salvestus ning Open-Meteo ilmaprognoos. Lisandusid kalendri ja ilma testid.
+- Lisasin külvikandele sordi ja vabas vormis täpsustused.
+- Lisasin hooldusvaate väetamisjuhiste, potitomati ja potikurgi väetamisvahede ning kuufaasiga seotud aiatöödega. Lisandus hooldussoovituste test.

@@ -2,6 +2,7 @@
 
 Need postitused kirjeldavad Kuukülvi prototüübi arendusetappe. Üksikud muudatused ja kontrollid on kirjas [arenduslogis](../logi.md).
 
+- [Kuidas Kuukülv alguse sai](kuidas-kuukulv-alguse-sai.md)
 - [Külviaknad ja kuufaasid](kulviaknad-ja-kuufaasid.md)
 - [Külviplaanist külvipäevikuni](kulviplaanid-ja-paevik.md)
 - [Kohalik ilm ja taimehooldus](ilm-ja-taimehooldus.md)
